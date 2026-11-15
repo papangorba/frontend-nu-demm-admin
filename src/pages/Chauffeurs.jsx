@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { apiUsers, apiFiche, apiVehicules, serviceIcon, serviceDuVehicule, categorieService, fmtDate, fmtDT, Audit } from '../services/api';
 import FicheUtilisateur, { BadgeInactivite, ilYa, joursInactif } from '../components/FicheUtilisateur';
 import { Avatar, StatusBadge, MiniCard, Modal, Spinner, EmptyRow, LoadingRow } from '../components/ui';
@@ -23,6 +24,7 @@ export default function Chauffeurs() {
   const [activite, setActivite] = useState('');
   const [ficheId, setFicheId] = useState(null);
   const [seuil, setSeuil] = useState(30);
+  const [nbEntreprise, setNbEntreprise] = useState(0);
   useEffect(() => { apiFiche.activite().then(a => setSeuil(a?.seuilAlerteJours || 30)).catch(() => {}); }, []);
   const filtreActivite = c => {
     const j = joursInactif(c);
@@ -42,7 +44,10 @@ export default function Chauffeurs() {
         const proprio = v.user?.id ?? v.userId;
         if (proprio != null && !parChauffeur[proprio]) parChauffeur[proprio] = v;
       });
-      setAll((chauffeurs || []).map(c => {
+      // Les chauffeurs d'une entreprise de transport sont dans le dossier de leur entreprise, pas ici
+      const liste = chauffeurs || [];
+      setNbEntreprise(liste.filter(c => c.flotteId != null).length);
+      setAll(liste.filter(c => c.flotteId == null).map(c => {
         const v = parChauffeur[c.id];
         return { ...c, vehicule: v || null, service: serviceDuVehicule(v?.type, c.typeService) };
       }));
@@ -166,6 +171,12 @@ export default function Chauffeurs() {
         <MiniCard color="var(--nd-purple)" value={counts.livraison} label="Livreurs" />
         <MiniCard color="var(--nd-orange)" value={counts.sansVehicule} label="Sans véhicule" />
       </div>
+      {nbEntreprise > 0 && (
+        <div className="nd-alert nd-alert-info" style={{ marginBottom: 18 }}>
+          <span>🏢 {nbEntreprise} chauffeur(s) d'entreprises de transport ne sont pas dans cette liste : ils sont dans le dossier
+            de leur entreprise (<Link to="/entreprises">Entreprises de transport</Link>).</span>
+        </div>
+      )}
 
       <div className="nd-card">
         <div className="nd-card-body-p0">
