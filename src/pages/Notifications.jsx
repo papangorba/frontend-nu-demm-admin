@@ -17,6 +17,53 @@ const MODELES = [
   { label: '🚗 Chauffeurs',  titre: 'Forte demande en ce moment 🔥', message: 'Beaucoup de clients attendent près de chez vous : passez en ligne !' },
 ];
 
+/** Icône et couleur par type de notification (comme dans les apps) */
+const TYPES = {
+  COURSE: ['🚗', '#f97316', 'Course'], LIVRAISON: ['📦', '#a855f7', 'Livraison'], NOUVELLE_COURSE: ['🚗', '#f97316', 'Nouvelle course'],
+  NOUVELLE_LIVRAISON: ['📦', '#a855f7', 'Nouvelle livraison'], COURSE_PROGRAMMEE: ['📅', '#4f46e5', 'Programmée'],
+  RESERVATION: ['🎫', '#0d9488', 'Réservation'], PAIEMENT: ['💳', '#0d9488', 'Paiement'], ANNULATION: ['✖', '#ef4444', 'Annulation'],
+  SOS: ['🆘', '#dc2626', 'Sécurité'], TRAJET: ['🔔', '#2563eb', 'Alerte trajet'], ANNONCE: ['📣', '#452778', 'Annonce'],
+  BIENVENUE: ['👋', '#16a34a', 'Bienvenue'], SYSTEME: ['ℹ', '#64748b', 'Information'],
+  CLIENTS: ['👥', '#2563eb', 'Clients'], CHAUFFEURS: ['🏍', '#f59e0b', 'Chauffeurs'], TOUS: ['📣', '#452778', 'Tout le monde'],
+  UTILISATEUR: ['🎯', '#16a34a', 'Personnel'],
+};
+const typeDe = t => TYPES[t] || ['🔔', '#452778', t || 'Notification'];
+
+/** « à l'instant », « il y a 5 min », « hier à 14:20 », sinon la date */
+const ilYa = iso => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const min = Math.round((Date.now() - d.getTime()) / 60000);
+  const hh = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (min < 1) return "à l'instant";
+  if (min < 60) return `il y a ${min} min`;
+  if (min < 24 * 60 && d.getDate() === new Date().getDate()) return `aujourd'hui à ${hh}`;
+  if (min < 48 * 60) return `hier à ${hh}`;
+  return fmtDT(iso);
+};
+
+/** Une notification, présentée comme sur le téléphone : pastille du type, titre, message, heure */
+function LigneNotif({ type, titre, message, quand, lu = true, destinataire }) {
+  const [icone, couleur, libelle] = typeDe(type);
+  return (
+    <div className={`pc-item${lu ? '' : ' non-lu'}`}>
+      <span className="pc-item-icone" style={{ background: `${couleur}1f`, color: couleur }}>{icone}</span>
+      <div className="pc-item-corps">
+        <div className="pc-item-haut">
+          <b className="pc-item-titre">{titre || 'Notification'}</b>
+          {!lu && <span className="pc-item-point" title="Non lue" />}
+        </div>
+        <div className="pc-item-msg">{message}</div>
+        <div className="pc-item-bas">
+          <span className="pc-item-etiquette" style={{ color: couleur, borderColor: `${couleur}55` }}>{libelle}</span>
+          {destinataire && <span>→ {destinataire}</span>}
+          <span>{ilYa(quand)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const HISTORY_KEY = 'nd2_push_history';
 const loadHistory = () => { try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; } };
 
@@ -30,6 +77,7 @@ export default function Notifications() {
   const [user, setUser] = useState(null);
   const [sending, setSending] = useState(false);
   const [history, setHistory] = useState(loadHistory);
+  const [apercu, setApercu] = useState('android');
 
   // Boîte de réception de l'utilisateur sélectionné
   const [inbox, setInbox] = useState([]);
@@ -173,13 +221,19 @@ export default function Notifications() {
 
         {/* ─── Aperçu téléphone + historique ─── */}
         <div>
-          <div className="pc-phone">
+          <div className="sv-chips" style={{ padding: '0 0 10px', justifyContent: 'center' }}>
+            {[['android', 'Android'], ['iphone', 'iPhone']].map(([k, l]) => (
+              <button key={k} className={`sv-chip ${apercu === k ? 'active' : ''}`} onClick={() => setApercu(k)}>{l}</button>
+            ))}
+          </div>
+          <div className={`pc-phone pc-phone-${apercu}`}>
             <div className="pc-phone-notch" />
             <div className="pc-phone-time">{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
-            <div className="pc-notif">
+            <div className={`pc-notif pc-notif-${apercu}`}>
               <div className="pc-notif-app">
-                <span className="pc-notif-logo">ÑD</span>
-                {cible === 'CHAUFFEURS' ? 'Ñu Demm Pro' : 'Ñu Demm'} · maintenant
+                <img className="pc-notif-logo-img" src="/logo.png" alt="" />
+                <span>{cible === 'CHAUFFEURS' ? 'Ñu Demm Pro' : 'Ñu Demm'}</span>
+                <span className="pc-notif-quand">{apercu === 'iphone' ? 'maintenant' : '· maintenant'}</span>
               </div>
               <div className="pc-notif-title">{titre || 'Titre de la notification'}</div>
               <div className="pc-notif-msg">{message || 'Le message apparaîtra ici, tel que vos utilisateurs le verront.'}</div>
@@ -191,11 +245,7 @@ export default function Notifications() {
             <div className="nd-card-body" style={{ maxHeight: 260, overflowY: 'auto' }}>
               {!history.length ? <div className="nd-empty">Aucun envoi pour l'instant</div> :
                 history.map(h => (
-                  <div key={h.id} className="pc-hist">
-                    <div><b>{h.titre}</b> <small className="nd-cell-sub">→ {h.cibleLabel}</small></div>
-                    <div className="nd-cell-sub">{h.message}</div>
-                    <div className="pc-hist-time">{fmtDT(h.at)}</div>
-                  </div>
+                  <LigneNotif key={h.id} type={h.cible} titre={h.titre} message={h.message} quand={h.at} destinataire={h.cibleLabel} />
                 ))}
             </div>
           </div>
@@ -212,11 +262,7 @@ export default function Notifications() {
           <div className="nd-card-body">
             {inboxLoading ? <Spinner center /> : !inbox.length ? <div className="nd-empty">Aucune notification</div> :
               inbox.map(n => (
-                <div key={n.id} className="pc-hist" style={{ opacity: n.lu ? 0.55 : 1 }}>
-                  <div>{n.lu ? '📭' : '🔔'} <b>{n.titre || 'Notification'}</b> <small className="nd-cell-sub">{n.type}</small></div>
-                  <div className="nd-cell-sub">{n.message}</div>
-                  <div className="pc-hist-time">{fmtDT(n.dateEnvoi)}{n.lu && ' · lue'}</div>
-                </div>
+                <LigneNotif key={n.id} type={n.type} titre={n.titre} message={n.message} quand={n.dateEnvoi} lu={!!n.lu} />
               ))}
           </div>
         </div>

@@ -6,8 +6,9 @@ import { apiAdmin, apiCommandes, apiLivraisons, fmtDT, money, Audit } from '../s
 import { StatusBadge, MiniCard, Spinner } from '../components/ui';
 import { useToast, useTheme } from '../context/AppContext';
 import CarteGenerale from '../components/CarteGenerale';
+import { iconeVehicule, iconePersonne, iconeDrapeau, libelleVehicule, SENEGAL } from '../components/carteIcones';
+import { useRegions, SelectZone, CadrerZone, Legende } from '../components/FiltreZone';
 
-const DAKAR = [14.7167, -17.4677];
 const REFRESH_MS = 5000;
 
 const FILTERS = [
@@ -20,16 +21,11 @@ const FILTERS = [
 
 const STATUS_COLOR = { EN_ATTENTE: '#f59e0b', ACCEPTEE: '#06b6d4', EN_COURS: '#22c55e' };
 
-// ─── Icônes de carte (HTML/CSS, nettes sur tous les écrans) ───
-const driverIcon = (item, selected) => L.divIcon({
-  className: '',
-  html: `<div class="sv-driver ${selected ? 'sel' : ''}" style="--c:${STATUS_COLOR[item.status] || '#64748b'}">
-           ${item.kind === 'LIVRAISON' ? '🏍' : '🚗'}</div>`,
-  iconSize: [36, 36], iconAnchor: [18, 18], popupAnchor: [0, -18],
+/** Véhicule du trajet : orange = en course, anneau selon l'état */
+const iconeTrajet = (it, sel) => iconeVehicule({
+  code: it.vehicule, cap: it.cap, sel,
+  etat: it.status === 'EN_ATTENTE' ? 'ATTENTE' : 'OCCUPE',
 });
-const pickupIcon = L.divIcon({ className: '', html: '<div class="sv-pin sv-pickup"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
-const dropoffIcon = L.divIcon({ className: '', html: '<div class="sv-pin sv-dropoff"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
-const waitingIcon = L.divIcon({ className: '', html: '<div class="sv-pin sv-waiting"><span></span></div>', iconSize: [22, 22], iconAnchor: [11, 11] });
 
 const ll = p => (p ? [p.lat, p.lng] : null);
 const keyOf = it => `${it.kind}-${it.id}`;
@@ -61,14 +57,20 @@ export default function Supervision() {
   const [, tick] = useState(0);
   const firstLoad = useRef(true);
   /** TRAJETS : trajets en direct ; CARTE : tous les clients et chauffeurs */
-  const [mode, setMode] = useState('TRAJETS');
+  // Liens directs : /supervision?mode=carte&zone=DAKAR
+  const params = new URLSearchParams(window.location.search);
+  const [mode, setMode] = useState(params.get('mode') === 'carte' ? 'CARTE' : 'TRAJETS');
+  /** Zone : '' = tout le Sénégal, sinon le code d'une des 14 régions */
+  const [zone, setZone] = useState((params.get('zone') || '').toUpperCase());
+  const [jetonZone, setJetonZone] = useState(0);
+  const regions = useRegions();
 
   const load = async () => {
     try {
       const res = await apiAdmin.live();
       setItems(res?.items || []);
       setUpdatedAt(Date.now());
-      if (firstLoad.current) { firstLoad.current = false; setFitToken(t => t + 1); }
+      firstLoad.current = false; // la carte reste cadrée sur le Sénégal (ou la zone choisie)
     } catch (e) {
       toast(e.message, 'error');
       setLive(false); // évite une rafale d'erreurs
@@ -89,6 +91,7 @@ export default function Supervision() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(it => {
+      if (zone && it.region !== zone) return false;
       if (filter === 'COURSE' && it.kind !== 'COURSE') return false;
       if (filter === 'LIVRAISON' && it.kind !== 'LIVRAISON') return false;
       if (filter === 'ATTENTE' && it.status !== 'EN_ATTENTE') return false;
@@ -98,15 +101,16 @@ export default function Supervision() {
         it.chauffeur?.name, it.chauffeur?.telephone]
         .some(v => String(v ?? '').toLowerCase().includes(q));
     });
-  }, [items, filter, search]);
+  }, [items, filter, search, zone]);
 
   const sel = selected ? items.find(it => keyOf(it) === selected) : null;
 
+  const dansZone = items.filter(it => !zone || it.region === zone);
   const counts = {
-    attente: items.filter(i => i.status === 'EN_ATTENTE').length,
-    courses: items.filter(i => i.kind === 'COURSE' && i.status !== 'EN_ATTENTE').length,
-    livraisons: items.filter(i => i.kind === 'LIVRAISON' && i.status !== 'EN_ATTENTE').length,
-    localises: items.filter(i => i.driver).length,
+    attente: dansZone.filter(i => i.status === 'EN_ATTENTE').length,
+    courses: dansZone.filter(i => i.kind === 'COURSE' && i.status !== 'EN_ATTENTE').length,
+    livraisons: dansZone.filter(i => i.kind === 'LIVRAISON' && i.status !== 'EN_ATTENTE').length,
+    localises: dansZone.filter(i => i.driver).length,
   };
 
   const focus = it => {
@@ -149,6 +153,9 @@ export default function Supervision() {
             <button className={`sv-chip ${mode === 'TRAJETS' ? 'active' : ''}`} onClick={() => setMode('TRAJETS')}>🛰 Trajets en direct</button>
             <button className={`sv-chip ${mode === 'CARTE' ? 'active' : ''}`} onClick={() => setMode('CARTE')}>🗺 Clients &amp; chauffeurs</button>
           </div>
+          <SelectZone value={zone} regions={regions}
+            onChange={z => { setZone(z); setSelected(null); setJetonZone(j => j + 1); }}
+            compter={mode === 'TRAJETS' ? (code => items.filter(it => !code || it.region === code).length) : null} />
           {mode === 'TRAJETS' && <>
           <div className="nd-search-box">
             <span>🔍</span>
@@ -164,7 +171,7 @@ export default function Supervision() {
         </div>
       </div>
 
-      {mode === 'CARTE' ? <CarteGenerale /> : <>
+      {mode === 'CARTE' ? <CarteGenerale zone={zone} regions={regions} jetonZone={jetonZone} /> : <>
 
       <div className="nd-mini-stats" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginBottom: 18 }}>
         <MiniCard color="var(--nd-amber)"  value={counts.attente}    label="En attente d'un chauffeur" />
@@ -213,7 +220,7 @@ export default function Supervision() {
 
         {/* ─── Carte ─── */}
         <div className="nd-card sv-map">
-          <MapContainer center={DAKAR} zoom={12} style={{ height: '100%', width: '100%' }} zoomControl>
+          <MapContainer bounds={SENEGAL} style={{ height: '100%', width: '100%' }} zoomControl>
             {/* Fond OpenStreetMap (gratuit, sans clé) ; assombri par CSS en thème sombre */}
             <TileLayer
               key={dark ? 'dark' : 'light'}
@@ -222,6 +229,7 @@ export default function Supervision() {
               className={dark ? 'sv-tiles-dark' : 'sv-tiles-light'}
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
+            <CadrerZone zone={zone} regions={regions} jeton={jetonZone} />
             <FitTo points={fitPoints} token={fitToken} />
 
             {/* Trajet de la sélection : prise en charge → destination */}
@@ -233,8 +241,8 @@ export default function Supervision() {
               <Polyline positions={[ll(sel.driver), ll(sel.aBord ? sel.dropoff : sel.pickup)]}
                 pathOptions={{ color: STATUS_COLOR[sel.status] || '#22c55e', weight: 4 }} />
             )}
-            {sel?.pickup && <Marker position={ll(sel.pickup)} icon={pickupIcon} />}
-            {sel?.dropoff && <Marker position={ll(sel.dropoff)} icon={dropoffIcon} />}
+            {sel?.pickup && <Marker position={ll(sel.pickup)} icon={iconePersonne({ couleur: '#2563eb' })} />}
+            {sel?.dropoff && <Marker position={ll(sel.dropoff)} icon={iconeDrapeau()} />}
 
             {filtered.map(it => {
               const pos = ll(it.driver) || ll(it.pickup);
@@ -242,13 +250,14 @@ export default function Supervision() {
               const isSel = selected === keyOf(it);
               return (
                 <Marker key={keyOf(it)} position={pos}
-                  icon={it.driver ? driverIcon(it, isSel) : waitingIcon}
+                  icon={it.driver ? iconeTrajet(it, isSel) : iconePersonne({ couleur: '#f59e0b', attente: true })}
                   zIndexOffset={isSel ? 1000 : 0}
                   eventHandlers={{ click: () => setSelected(keyOf(it)) }}>
                   <Popup>
                     <div className="sv-popup">
                       <div className="sv-popup-title">
                         {it.kind === 'COURSE' ? '🚗 Course' : '📦 Livraison'} #{it.id}
+                        {it.driver && <small className="nd-cell-sub"> · {libelleVehicule(it.vehicule)}</small>}
                       </div>
                       <div><b>Départ :</b> {it.depart || '—'}</div>
                       <div><b>Arrivée :</b> {it.destination || '—'}</div>
@@ -266,6 +275,7 @@ export default function Supervision() {
               );
             })}
           </MapContainer>
+          <Legende />
         </div>
       </div>
       </>}

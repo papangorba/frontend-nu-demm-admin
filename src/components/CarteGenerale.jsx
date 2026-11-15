@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Rectangle, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Marker, Rectangle, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { iconeVehicule, iconePersonne, libelleVehicule, SENEGAL, bornesRegion } from './carteIcones';
+import { CadrerZone, Legende } from './FiltreZone';
 import { apiFiche, fmtDT } from '../services/api';
 import { MiniCard, Spinner } from './ui';
 import { useToast, useTheme } from '../context/AppContext';
@@ -10,7 +12,6 @@ import FicheUtilisateur from './FicheUtilisateur';
  * pour savoir où sont les clients et où il manque des chauffeurs.
  */
 
-const DAKAR = [14.7167, -17.4677];
 const ACTUALISATION_MS = 30000;
 const MAILLE = 0.01; // zone ≈ 1,1 km (comme le serveur)
 
@@ -28,6 +29,18 @@ function Voler({ cible }) {
   return null;
 }
 
+/** Niveau de zoom (les clients deviennent des épingles quand on zoome) */
+function SuiviZoom({ onZoom }) {
+  const map = useMapEvents({ zoomend: () => onZoom(map.getZoom()) });
+  return null;
+}
+
+/** Point dans le cadre d'une région (pour les zones de 1 km, qui n'ont pas de code de région) */
+const dansCadre = (lat, lng, r) => {
+  const b = bornesRegion(r);
+  return lat >= b[0][0] && lat <= b[1][0] && lng >= b[0][1] && lng <= b[1][1];
+};
+
 function Case({ actif, onChange, couleur, children }) {
   return (
     <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13 }}>
@@ -38,7 +51,7 @@ function Case({ actif, onChange, couleur, children }) {
   );
 }
 
-export default function CarteGenerale() {
+export default function CarteGenerale({ zone = '', regions = [], jetonZone = 0 }) {
   const toast = useToast();
   const { dark } = useTheme();
   const [d, setD] = useState(null);
@@ -47,6 +60,7 @@ export default function CarteGenerale() {
   const [onglet, setOnglet] = useState('zones');
   const [cible, setCible] = useState(null);
   const [ficheId, setFicheId] = useState(null);
+  const [zoom, setZoom] = useState(7);
 
   const charger = async () => {
     try { setD(await apiFiche.carte(jours)); }
@@ -55,16 +69,33 @@ export default function CarteGenerale() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { setD(null); charger(); const t = setInterval(charger, ACTUALISATION_MS); return () => clearInterval(t); }, [jours]);
 
+  // Tout ce qui est affiché se limite à la zone choisie
+  const r = regions.find(x => x.code === zone);
+  const vue2 = useMemo(() => {
+    if (!d) return null;
+    if (!zone) return d;
+    return {
+      ...d,
+      chauffeurs: d.chauffeurs.filter(c => c.region === zone),
+      clients: d.clients.filter(c => c.region === zone),
+      demandes: d.demandes.filter(x => x[4] === zone),
+      zones: d.zones.filter(z => r && dansCadre(z.lat, z.lng, r)),
+      regions: d.regions,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d, zone, r]);
+
   const compte = useMemo(() => {
-    const c = d?.chauffeurs || [];
+    const c = vue2?.chauffeurs || [];
     return {
       enLigne: c.filter(x => x.etat === 'EN_LIGNE').length,
       occupe: c.filter(x => x.etat === 'OCCUPE').length,
       horsLigne: c.filter(x => x.etat === 'HORS_LIGNE').length,
-      clients: (d?.clients || []).length,
-      manque: (d?.zones || []).filter(z => z.manqueChauffeurs).length,
+      clients: (vue2?.clients || []).length,
+      manque: (vue2?.zones || []).filter(z => z.manqueChauffeurs).length,
+      demandes: (vue2?.demandes || []).length,
     };
-  }, [d]);
+  }, [vue2]);
 
   const set = k => v => setVue(o => ({ ...o, [k]: v }));
   const popupPersonne = (p, role) => (
@@ -72,7 +103,7 @@ export default function CarteGenerale() {
       <div className="sv-popup">
         <div className="sv-popup-title">{role === 'CLIENT' ? '🧍 Client' : '🚗 Chauffeur'} #{p.id}</div>
         <div><b>{p.name || '—'}</b> · {p.telephone}</div>
-        {p.etat && <div>{LIB_ETAT[p.etat]}{p.typeService ? ` · ${p.typeService}` : ''}</div>}
+        {p.etat && <div>{LIB_ETAT[p.etat]} · {libelleVehicule(p.vehicule)}</div>}
         <div className="nd-cell-sub">Position du {fmtDT(p.depuis)}</div>
         <div className="sv-popup-actions">
           <a className="nd-btn nd-btn-outline nd-btn-sm" href={`tel:+221${p.telephone}`}>📞 Appeler</a>
@@ -82,7 +113,8 @@ export default function CarteGenerale() {
     </Popup>
   );
 
-  if (!d) return <Spinner center />;
+  if (!d || !vue2) return <Spinner center />;
+  const v = vue2;
 
   return (
     <>
@@ -90,7 +122,7 @@ export default function CarteGenerale() {
         <MiniCard color="var(--nd-blue)" value={compte.clients} label="Clients localisés" />
         <MiniCard color="var(--nd-green)" value={compte.enLigne} label="Chauffeurs en ligne" />
         <MiniCard color="var(--nd-amber)" value={compte.occupe} label="En course" />
-        <MiniCard color="var(--nd-purple)" value={d.demandesTotal} label={`Demandes (${PERIODES.find(p => p[0] === jours)?.[1]})`} />
+        <MiniCard color="var(--nd-purple)" value={zone ? compte.demandes : d.demandesTotal} label={`Demandes (${PERIODES.find(p => p[0] === jours)?.[1]})`} />
         <MiniCard color="var(--nd-red)" value={compte.manque} label="Zones où il manque des chauffeurs" />
       </div>
 
@@ -113,8 +145,8 @@ export default function CarteGenerale() {
             <button className={`sv-chip ${onglet === 'regions' ? 'active' : ''}`} onClick={() => setOnglet('regions')}>Par région</button>
           </div>
           <div className="sv-list-body">
-            {onglet === 'zones' ? (!d.zones.length ? <div className="nd-empty">Pas encore de données</div> :
-              d.zones.map((z, i) => (
+            {onglet === 'zones' ? (!v.zones.length ? <div className="nd-empty">Pas encore de données dans cette zone</div> :
+              v.zones.map((z, i) => (
                 <button key={`${z.lat}-${z.lng}`} className="sv-item" onClick={() => setCible({ pos: [z.lat, z.lng], zoom: 15 })}>
                   <div className="sv-item-top">
                     <span className="sv-kind">#{i + 1} · zone de 1 km</span>
@@ -134,7 +166,7 @@ export default function CarteGenerale() {
               <table className="nd-table" style={{ fontSize: 13 }}>
                 <thead><tr><th>Région</th><th>Clients</th><th>Chauffeurs</th><th>Demandes</th><th>Sans chauff.</th></tr></thead>
                 <tbody>{d.regions.map(r => (
-                  <tr key={r.region}>
+                  <tr key={r.region} style={zone && regions.find(x => x.code === zone)?.nom === r.region ? { background: 'rgba(69,39,120,.08)', fontWeight: 700 } : undefined}>
                     <td><b>{r.region}</b></td><td>{r.clients}</td>
                     <td>{r.chauffeurs} <small className="nd-cell-sub">({r.chauffeursEnLigne} en ligne)</small></td>
                     <td>{r.demandes}</td>
@@ -147,7 +179,7 @@ export default function CarteGenerale() {
         </div>
 
         <div className="nd-card sv-map">
-          <MapContainer center={DAKAR} zoom={12} style={{ height: '100%', width: '100%' }} preferCanvas>
+          <MapContainer bounds={SENEGAL} style={{ height: '100%', width: '100%' }} preferCanvas>
             <TileLayer
               key={dark ? 'dark' : 'light'}
               url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -156,9 +188,11 @@ export default function CarteGenerale() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
             <Voler cible={cible} />
+            <CadrerZone zone={zone} regions={regions} jeton={jetonZone} />
+            <SuiviZoom onZoom={setZoom} />
 
             {/* Zones où il manque des chauffeurs */}
-            {vue.zones && d.zones.filter(z => z.manqueChauffeurs).map(z => (
+            {vue.zones && v.zones.filter(z => z.manqueChauffeurs).map(z => (
               <Rectangle key={`z-${z.lat}-${z.lng}`}
                 bounds={[[z.lat - MAILLE / 2, z.lng - MAILLE / 2], [z.lat + MAILLE / 2, z.lng + MAILLE / 2]]}
                 pathOptions={{ color: '#dc2626', weight: 1.5, fillColor: '#dc2626', fillOpacity: 0.12 }}>
@@ -169,27 +203,34 @@ export default function CarteGenerale() {
             ))}
 
             {/* Demandes : plus il y en a, plus la zone est foncée */}
-            {vue.demandes && d.demandes.map(([lat, lng, code, type], i) => (
+            {vue.demandes && v.demandes.map(([lat, lng, code, type], i) => (
               <CircleMarker key={`d-${i}`} center={[lat, lng]} radius={5} interactive={false}
                 pathOptions={{ stroke: false, fillColor: COULEUR[code] || '#f59e0b', fillOpacity: 0.28 }}>
                 <Popup>{type === 'COURSE' ? 'Course' : 'Livraison'} · {LIB_DEMANDE[code]}</Popup>
               </CircleMarker>
             ))}
 
-            {vue.clients && d.clients.map(c => (
+            {/* Clients : petits points vus de loin, épingles avec une personne de près */}
+            {vue.clients && v.clients.map(c => zoom >= 12 ? (
+              <Marker key={`c-${c.id}`} position={[c.lat, c.lng]} icon={iconePersonne({ couleur: COULEUR.CLIENT, petit: true })}>
+                {popupPersonne(c, 'CLIENT')}
+              </Marker>
+            ) : (
               <CircleMarker key={`c-${c.id}`} center={[c.lat, c.lng]} radius={5}
                 pathOptions={{ color: '#fff', weight: 1.5, fillColor: COULEUR.CLIENT, fillOpacity: 0.9 }}>
                 {popupPersonne(c, 'CLIENT')}
               </CircleMarker>
             ))}
 
-            {d.chauffeurs.filter(c => (c.etat === 'HORS_LIGNE' ? vue.horsLigne : vue.chauffeurs)).map(c => (
-              <CircleMarker key={`ch-${c.id}`} center={[c.lat, c.lng]} radius={c.etat === 'HORS_LIGNE' ? 5 : 7}
-                pathOptions={{ color: '#fff', weight: 2, fillColor: COULEUR[c.etat], fillOpacity: 0.95 }}>
+            {/* Chauffeurs : leur véhicule (voiture, moto, fourgon…) orienté, anneau = état */}
+            {v.chauffeurs.filter(c => (c.etat === 'HORS_LIGNE' ? vue.horsLigne : vue.chauffeurs)).map(c => (
+              <Marker key={`ch-${c.id}`} position={[c.lat, c.lng]} zIndexOffset={c.etat === 'HORS_LIGNE' ? 0 : 500}
+                icon={iconeVehicule({ code: c.vehicule, etat: c.etat, cap: c.cap })}>
                 {popupPersonne(c, 'CHAUFFEUR')}
-              </CircleMarker>
+              </Marker>
             ))}
           </MapContainer>
+          <Legende demandes={vue.demandes} />
         </div>
       </div>
 
