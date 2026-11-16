@@ -1007,3 +1007,9 @@ h1,h2,h3,.nd-page-title,.nd-card-title,.nd-brand-name,.nd-welcome-title,.nd-logi
 .nd-sidebar.collapsed .nd-menu-nouveau { display:none; }
 .nd-sidebar.collapsed .nd-menu-point { display:block; }
 @keyframes nd-pop { from { transform:scale(.4); opacity:0 } to { transform:scale(1); opacity:1 } }
+
+/* Statistiques d'une bannière */
+.pb-stats { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 2px; }
+.pb-stats span { font-size:11.5px; padding:3px 8px; border-radius:20px; background:var(--nd-surface2); border:1px solid var(--nd-border); color:var(--nd-text-muted); }
+.pb-stats b { color:var(--nd-text); }
+.pb-stats .pb-taux { background:rgba(18,183,106,.12); border-color:rgba(18,183,106,.35); color:#067647; font-weight:700; }

@@ -209,6 +209,13 @@ function Bannieres() {
                   </div>
                   <small className="nd-cell-sub">📅 {periode(b)}</small>
                   <small className="nd-cell-sub">{CIBLES[b.cible]} · ordre {b.ordre ?? 0} · {actionLabel(b)}</small>
+                  {/* Statistiques envoyées par les apps */}
+                  <div className="pb-stats" title="Vues dans le carrousel (1 fois par ouverture de l'app) · ouvertures en plein écran · bouton « Voir » touché">
+                    <span><b>{(b.affichages || 0).toLocaleString('fr-FR')}</b> vues</span>
+                    <span><b>{(b.ouvertures || 0).toLocaleString('fr-FR')}</b> plein écran</span>
+                    <span><b>{(b.clics || 0).toLocaleString('fr-FR')}</b> clics</span>
+                    {b.affichages > 0 && <span className="pb-taux">{Math.round(100 * (b.clics || 0) / b.affichages)} % de clics</span>}
+                  </div>
                   <div className="pb-card-actions">
                     <button className="nd-btn nd-btn-outline nd-btn-sm" onClick={() => setEdition({
                       ...BANNIERE_VIDE, ...b, dateDebut: versInput(b.dateDebut), dateFin: versInput(b.dateFin), imageBase64: null,
