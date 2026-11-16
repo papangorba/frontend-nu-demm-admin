@@ -15,6 +15,7 @@ import Documents from './pages/Documents';
 import ControleApp from './pages/ControleApp';
 import AlertesSos from './pages/AlertesSos';
 import Suppressions from './pages/Suppressions';
+import ComptesPro from './pages/ComptesPro';
 import Regions from './pages/Regions';
 import Entreprises from './pages/Entreprises';
 import MonEntreprise from './pages/MonEntreprise';
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="supervision"   element={<Supervision />} />
         <Route path="sos"           element={<AlertesSos />} />
         <Route path="suppressions"  element={<Suppressions />} />
+        <Route path="comptes-pro"   element={<ComptesPro />} />
         <Route path="regions"       element={<Regions />} />
         <Route path="publicites"    element={<Publicites />} />
         <Route path="contenus"      element={<Contenus />} />

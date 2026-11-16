@@ -245,7 +245,10 @@ export default function ControleApp({ mode = 'apps' }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             {[['PRIX_AIDE_CHARGEMENT', "Prix d'un manutentionnaire (cargo)", 0, 50000, 'F', 'Ajouté au prix pour chaque manutentionnaire demandé (3 au plus)'],
-              ['FRAIS_ARRET', 'Supplément par arrêt en plus', 0, 20000, 'F', 'Tournée : par adresse en plus de la destination (3 au plus)']]
+              ['FRAIS_ARRET', 'Supplément par arrêt en plus', 0, 20000, 'F', 'Tournée : par adresse en plus de la destination (3 au plus)'],
+              ['ASSURANCE_POURCENT', 'Assurance du colis', 0, 20, '% de la valeur', 'Supplément payé par le client qui assure son colis'],
+              ['ASSURANCE_MIN', 'Assurance minimum', 0, 20000, 'F', 'Montant minimum de l\'assurance'],
+              ['ASSURANCE_VALEUR_MAX', 'Valeur maximale assurable', 1000, 10000000, 'F', 'Au-delà, la valeur est plafonnée']]
               .map(([cle, nom, min, max, unite, aide]) => (
               <div key={cle} className="nd-form-group">
                 <label>{nom}</label>

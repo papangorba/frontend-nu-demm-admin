@@ -9,7 +9,7 @@ import { apiNouveautes, Auth } from '../../services/api';
  */
 export const MODULES_NOUVEAUTES = {
   sos: '/sos', chauffeurs: '/chauffeurs', documents: '/documents', clients: '/clients',
-  suppressions: '/suppressions', commandes: '/commandes', livraisons: '/livraisons',
+  suppressions: '/suppressions', 'comptes-pro': '/comptes-pro', commandes: '/commandes', livraisons: '/livraisons',
   trajets: '/trajets', reservations: '/reservations', entreprises: '/entreprises',
 };
 

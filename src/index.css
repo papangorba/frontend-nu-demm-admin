@@ -1022,3 +1022,11 @@ h1,h2,h3,.nd-page-title,.nd-card-title,.nd-brand-name,.nd-welcome-title,.nd-logi
 .sl-chiffres span { display:block; font-size:17px; font-weight:800; color:var(--nd-text); }
 .sl-chiffres .sl-alerte span { color:#d92d20; }
 @media (max-width:560px) { .sl-chiffres { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+/* Relevé des clients pros : seul le relevé s'imprime */
+@media print {
+  body * { visibility:hidden; }
+  .cp-releve, .cp-releve * { visibility:visible; }
+  .cp-releve { position:absolute; left:0; top:0; width:100%; }
+  .cp-pas-imprime { display:none !important; }
+}

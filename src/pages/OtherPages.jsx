@@ -169,6 +169,8 @@ export function Livraisons() {
             + (detailItem.prixAides ? ` (dont manutention ${Number(detailItem.prixAides).toLocaleString('fr-FR')} F)` : '')
             + (detailItem.fraisArrets ? ` (dont arrêts ${Number(detailItem.fraisArrets).toLocaleString('fr-FR')} F)` : '') : null],
           ['Manutentionnaires', detailItem.nombreAides ? `${detailItem.nombreAides}` : null],
+          ['Assurance', detailItem.assuree ? `Valeur déclarée ${Number(detailItem.valeurDeclaree || 0).toLocaleString('fr-FR')} F · supplément ${Number(detailItem.prixAssurance || 0).toLocaleString('fr-FR')} F` : null],
+          ['Note du destinataire', detailItem.noteDestinataire ? `${'★'.repeat(detailItem.noteDestinataire)}${detailItem.commentaireDestinataire ? ` « ${detailItem.commentaireDestinataire} »` : ''}` : null],
           ['Programmée pour', detailItem.dateProgrammee ? fmtDT(detailItem.dateProgrammee) : null],
           ['Code de remise', detailItem.codeRemise ? `${detailItem.codeRemise} (donné au destinataire)` : null],
           ['Arrêts de la tournée', detailItem.arrets?.length ? (

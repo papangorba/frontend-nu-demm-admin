@@ -90,8 +90,8 @@ export const Auth = {
   },
   PERMS: {
     SUPER_ADMIN: ['*'],
-    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','suppressions','sessions','commandes','livraisons','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
-    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','suppressions','commandes','livraisons','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
+    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
+    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
     ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
     MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','notifications'],
@@ -336,6 +336,13 @@ export const apiRegions = {
 /** Pastilles du menu : nouveautés par module depuis la dernière visite ({ module: 'aaaa-mm-jjThh:mm:ss' }) */
 export const apiNouveautes = {
   compter: depuis => get(`/api/admin/nouveautes?${new URLSearchParams(depuis).toString()}`),
+};
+
+/** Clients professionnels : demandes, validation, relevé mensuel */
+export const apiComptesPro = {
+  liste:   ()             => get('/api/admin/comptes-pro'),
+  decider: (id, statut)   => put(`/api/admin/comptes-pro/${id}`, { statut }),
+  releve:  (id, mois)     => get(`/api/admin/comptes-pro/${id}/releve?mois=${mois || ''}`),
 };
 
 export const apiSuppressions = {

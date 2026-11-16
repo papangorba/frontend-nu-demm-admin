@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Radar, Car, IdCard, Users, ShoppingBag, Truck, Route, CarFront, CalendarDays,
   Bell, Megaphone, FileText, BadgeDollarSign, SlidersHorizontal, Clock, ShieldCheck, ScrollText, Settings,
-  Moon, Sun, LogOut, PanelLeftClose, PanelLeftOpen, Siren, Building2, Bus, Gauge, UserRound, MapPinned, UserX,
+  Moon, Sun, LogOut, PanelLeftClose, PanelLeftOpen, Siren, Building2, Bus, Gauge, UserRound, MapPinned, UserX, Store,
 } from 'lucide-react';
 import { Auth } from '../../services/api';
 import { Avatar, RoleBadge } from '../ui';
@@ -11,7 +11,7 @@ import { useNouveautes } from './nouveautes';
 
 /** Icônes du menu (lignes fines, comme les apps professionnelles). */
 export const ICONES = {
-  dashboard: LayoutDashboard, supervision: Radar, sos: Siren, entreprises: Building2, 'mon-entreprise': Gauge, 'ent-vehicules': Bus, 'ent-chauffeurs': UserRound, 'ent-profil': Building2, 'ent-trajets': MapPinned, chauffeurs: Car, documents: IdCard, clients: Users, suppressions: UserX,
+  dashboard: LayoutDashboard, supervision: Radar, sos: Siren, entreprises: Building2, 'mon-entreprise': Gauge, 'ent-vehicules': Bus, 'ent-chauffeurs': UserRound, 'ent-profil': Building2, 'ent-trajets': MapPinned, chauffeurs: Car, documents: IdCard, clients: Users, 'comptes-pro': Store, suppressions: UserX,
   commandes: ShoppingBag, livraisons: Truck, trajets: Route, vehicules: CarFront, reservations: CalendarDays,
   notifications: Bell, publicites: Megaphone, contenus: FileText, tarifs: BadgeDollarSign, controle: SlidersHorizontal, sessions: Clock, regions: MapPinned,
   admins: ShieldCheck, audit: ScrollText, settings: Settings,
@@ -43,6 +43,7 @@ export const MENU_SECTIONS = [
       { id: 'chauffeurs',   label: 'Chauffeurs',      to: '/chauffeurs' },
       { id: 'documents',    label: 'Documents',       to: '/documents' },
       { id: 'clients',      label: 'Clients',         to: '/clients' },
+      { id: 'comptes-pro',  label: 'Clients pros',    to: '/comptes-pro' },
       { id: 'suppressions', label: 'Suppressions de compte', to: '/suppressions' },
       { id: 'sessions',     label: 'Sessions & connexion', to: '/sessions' },
     ]
