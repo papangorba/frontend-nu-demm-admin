@@ -360,6 +360,16 @@ export const apiLivraisons = {
   byId:   id  => get(EP.LIVRAISON(id)),
   detail: id  => get(EP.LIVRAISON_DET(id)),
   attente: () => get(EP.LIVRAISONS_ATT),
+  /** Tableau de bord Livraison / Cargo */
+  stats:  (jours = 30) => get(`/api/admin/stats-livraisons?jours=${jours}`),
+  /** Photos du colis (commande, retrait, remise) */
+  photos: id => get(`/api/livraison/${id}/photos`),
+  async photo(url) {
+    const r = await fetch(`${getBase()}${url}`, { headers: { Authorization: `Bearer ${Auth.token()}` } });
+    if (!r.ok) throw new Error(`Photo indisponible (HTTP ${r.status})`);
+    return URL.createObjectURL(await r.blob());
+  },
+
   /** Annulation par l'admin : statut ANNULEE + client et livreur notifiés. */
   annuler: id => del(EP.LIVRAISON(id)),
 };

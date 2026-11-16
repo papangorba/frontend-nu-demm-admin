@@ -230,7 +230,40 @@ export default function ControleApp({ mode = 'apps' }) {
       </div>
 
       <div className="nd-card" style={{ marginTop: 16 }}>
+        <div className="nd-card-header"><span className="nd-card-title">📦 Livraison et Cargo</span></div>
+        <div className="nd-card-body">
+          <div className="cp-ligne" style={{ marginBottom: 14 }}>
+            <div>
+              <b>Remise sécurisée</b>
+              <small className="nd-cell-sub">
+                Activé : pour terminer, le livreur saisit le code à 4 chiffres reçu par le destinataire, et confirme
+                l'encaissement (espèces, Wave, Orange Money) quand c'est le destinataire qui paie. Les arrêts d'une tournée
+                doivent tous être livrés. À activer quand tous les livreurs ont la nouvelle version de l'app chauffeur.
+              </small>
+            </div>
+            <Interrupteur actif={on('REMISE_SECURISEE')} onChange={v => set('REMISE_SECURISEE', v)} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            {[['PRIX_AIDE_CHARGEMENT', "Prix d'un manutentionnaire (cargo)", 0, 50000, 'F', 'Ajouté au prix pour chaque manutentionnaire demandé (3 au plus)'],
+              ['FRAIS_ARRET', 'Supplément par arrêt en plus', 0, 20000, 'F', 'Tournée : par adresse en plus de la destination (3 au plus)']]
+              .map(([cle, nom, min, max, unite, aide]) => (
+              <div key={cle} className="nd-form-group">
+                <label>{nom}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input className="nd-input" type="number" min={min} max={max} style={{ maxWidth: 110 }}
+                    value={form[cle] ?? ''} onChange={e => set(cle, e.target.value.trim())} />
+                  <span className="nd-cell-sub">{unite}</span>
+                </div>
+                <small className="nd-cell-sub">{aide}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="nd-card" style={{ marginTop: 16 }}>
         <div className="nd-card-header"><span className="nd-card-title">Documents des chauffeurs</span></div>
+
         <div className="nd-card-body">
           <div className="cp-ligne">
             <div>

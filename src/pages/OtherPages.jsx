@@ -8,6 +8,36 @@ import {
   EmptyRow, LoadingRow, DetailRow
 } from '../components/ui';
 import { useToast } from '../context/AppContext';
+import StatsLivraisons from '../components/StatsLivraisons';
+
+/** Photos du colis (commande, retrait, remise), chargées avec le jeton de l'admin */
+function PhotosColis({ id }) {
+  const [photos, setPhotos] = useState(null);
+  useEffect(() => {
+    let urls = [];
+    (async () => {
+      try {
+        const liste = await apiLivraisons.photos(id) || [];
+        urls = await Promise.all(liste.map(async p => ({ ...p, src: await apiLivraisons.photo(p.url).catch(() => null) })));
+        setPhotos(urls);
+      } catch { setPhotos([]); }
+    })();
+    return () => urls.forEach(p => p.src && URL.revokeObjectURL(p.src));
+  }, [id]);
+  const ETAPES = { CLIENT: 'À la commande', RETRAIT: 'Au retrait', REMISE: 'À la remise' };
+  if (photos === null) return <small className="nd-cell-sub">Chargement des photos…</small>;
+  if (!photos.length) return <small className="nd-cell-sub">Aucune photo</small>;
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {photos.map(p => (
+        <a key={p.id} href={p.src || '#'} target="_blank" rel="noreferrer" style={{ textAlign: 'center', fontSize: 11 }}>
+          {p.src ? <img src={p.src} alt={p.etape} style={{ width: 84, height: 84, objectFit: 'cover', borderRadius: 10, display: 'block' }} /> : '—'}
+          {ETAPES[p.etape] || p.etape}
+        </a>
+      ))}
+    </div>
+  );
+}
 
 /** Livraison (moto) ou Cargo (3 roues, fourgonnette, camion), comme le serveur */
 const serviceLivraison = l => (l?.service || (['TROIS_ROUES','FOURGONNETTE','CAMION'].includes(String(l?.vehiculeType||'').toUpperCase()) ? 'CARGO' : 'LIVRAISON'));
@@ -24,6 +54,7 @@ export function Livraisons() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterService, setFilterService] = useState('');
+  const [voirStats, setVoirStats] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
 
   const load = async () => {
@@ -83,9 +114,11 @@ export function Livraisons() {
             <option value="">Tous statuts</option>
             {['EN_ATTENTE','ACCEPTEE','EN_COURS','LIVREE','ANNULEE','EXPIREE'].map(s=><option key={s} value={s}>{s}</option>)}
           </select>
+          <button className={`nd-btn ${voirStats ? 'nd-btn-primary' : 'nd-btn-outline'}`} onClick={() => setVoirStats(v => !v)}>📊 Tableau de bord</button>
           <button className="nd-btn nd-btn-outline" onClick={load}>↺</button>
         </div>
       </div>
+      {voirStats && <StatsLivraisons />}
       <div className="nd-mini-stats nd-mini-stats-5" style={{marginBottom:22}}>
         <MiniCard color="var(--nd-primary)" value={counts.total} label="Total"/>
         <MiniCard color="var(--nd-amber)"   value={counts.att}   label="En attente"/>
@@ -132,7 +165,20 @@ export function Livraisons() {
           ['Service', <BadgeService l={detailItem}/>],
           ['Véhicule', VEHICULES_LIVRAISON[String(detailItem.vehiculeType||'MOTO').toUpperCase()] || detailItem.vehiculeType],
           ['Aide au chargement', serviceLivraison(detailItem)==='CARGO' ? (detailItem.aideChargement ? 'Oui' : 'Non') : null],
-          ['Prix', detailItem.prix != null ? `${Number(detailItem.prix).toLocaleString('fr-FR')} FCFA` : null],
+          ['Prix', detailItem.prix != null ? `${Number(detailItem.prix).toLocaleString('fr-FR')} FCFA`
+            + (detailItem.prixAides ? ` (dont manutention ${Number(detailItem.prixAides).toLocaleString('fr-FR')} F)` : '')
+            + (detailItem.fraisArrets ? ` (dont arrêts ${Number(detailItem.fraisArrets).toLocaleString('fr-FR')} F)` : '') : null],
+          ['Manutentionnaires', detailItem.nombreAides ? `${detailItem.nombreAides}` : null],
+          ['Programmée pour', detailItem.dateProgrammee ? fmtDT(detailItem.dateProgrammee) : null],
+          ['Code de remise', detailItem.codeRemise ? `${detailItem.codeRemise} (donné au destinataire)` : null],
+          ['Arrêts de la tournée', detailItem.arrets?.length ? (
+            <div>{detailItem.arrets.map(a => (
+              <div key={a.id}>{a.statut === 'LIVRE' ? '✅' : '⏳'} {a.ordre}. {a.adresse} — {a.nomDestinataire} {a.telephoneDestinataire}{a.codeRemise ? ` · code ${a.codeRemise}` : ''}</div>
+            ))}</div>) : null],
+          ['Paiement du destinataire', detailItem.paiementConfirme
+            ? `Confirmé par le livreur (${{ ESPECE: 'espèces', WAVE: 'Wave', ORANGE_MONEY: 'Orange Money' }[detailItem.modePaiementRecu] || detailItem.modePaiementRecu})` : null],
+          ['Photos du colis', <PhotosColis id={detailItem.id}/>],
+
           ['Colis récupéré', detailItem.colisRecupere ? 'Oui' : 'Non'],
           ['Statut', <StatusBadge status={detailItem.status}/>],
           ['Créée le', fmtDT(detailItem.createdAt)],
