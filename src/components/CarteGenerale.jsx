@@ -206,7 +206,7 @@ export default function CarteGenerale({ zone = '', regions = [], jetonZone = 0 }
             {vue.demandes && v.demandes.map(([lat, lng, code, type], i) => (
               <CircleMarker key={`d-${i}`} center={[lat, lng]} radius={5} interactive={false}
                 pathOptions={{ stroke: false, fillColor: COULEUR[code] || '#f59e0b', fillOpacity: 0.28 }}>
-                <Popup>{type === 'COURSE' ? 'Course' : 'Livraison'} · {LIB_DEMANDE[code]}</Popup>
+                <Popup>{type === 'COURSE' ? 'Course' : type === 'CARGO' ? 'Cargo' : 'Livraison'} · {LIB_DEMANDE[code]}</Popup>
               </CircleMarker>
             ))}
 

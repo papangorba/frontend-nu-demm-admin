@@ -9,6 +9,13 @@ import {
 } from '../components/ui';
 import { useToast } from '../context/AppContext';
 
+/** Livraison (moto) ou Cargo (3 roues, fourgonnette, camion), comme le serveur */
+const serviceLivraison = l => (l?.service || (['TROIS_ROUES','FOURGONNETTE','CAMION'].includes(String(l?.vehiculeType||'').toUpperCase()) ? 'CARGO' : 'LIVRAISON'));
+const VEHICULES_LIVRAISON = { MOTO: '🏍 Moto', TROIS_ROUES: '🛺 Moto 3 roues', FOURGONNETTE: '🚐 Fourgonnette', CAMION: '🚚 Camion' };
+const BadgeService = ({ l }) => serviceLivraison(l)==='CARGO'
+  ? <span className="nd-badge" style={{background:'rgba(21,112,239,.12)',color:'#1570EF'}}>🚚 Cargo · {(VEHICULES_LIVRAISON[String(l.vehiculeType).toUpperCase()]||'').replace(/^\S+ /,'')}</span>
+  : <span className="nd-badge" style={{background:'rgba(247,144,9,.12)',color:'#B54708'}}>📦 Livraison</span>;
+
 // ─── LIVRAISONS ──────────────────────────────────────────────────
 export function Livraisons() {
   const toast = useToast();
@@ -16,6 +23,7 @@ export function Livraisons() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterService, setFilterService] = useState('');
   const [detailItem, setDetailItem] = useState(null);
 
   const load = async () => {
@@ -30,7 +38,8 @@ export function Livraisons() {
     const q = search.toLowerCase();
     const mQ = !q || String(l.id).includes(q)||(l.departAdresse||'').toLowerCase().includes(q)||(l.destination||'').toLowerCase().includes(q);
     const mS = !filterStatus || l.status===filterStatus;
-    return mQ && mS;
+    const mV = !filterService || serviceLivraison(l)===filterService;
+    return mQ && mS && mV;
   });
 
   const counts = {
@@ -65,6 +74,11 @@ export function Livraisons() {
         </div>
         <div className="nd-page-header-actions">
           <div className="nd-search-box"><span>🔍</span><input placeholder="Rechercher..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+          <select className="nd-input nd-select" style={{width:150}} value={filterService} onChange={e=>setFilterService(e.target.value)}>
+            <option value="">Livraison + Cargo</option>
+            <option value="LIVRAISON">📦 Livraison (moto)</option>
+            <option value="CARGO">🚚 Cargo</option>
+          </select>
           <select className="nd-input nd-select" style={{width:140}} value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
             <option value="">Tous statuts</option>
             {['EN_ATTENTE','ACCEPTEE','EN_COURS','LIVREE','ANNULEE','EXPIREE'].map(s=><option key={s} value={s}>{s}</option>)}
@@ -81,15 +95,16 @@ export function Livraisons() {
       </div>
       <div className="nd-card"><div className="nd-card-body-p0"><div className="nd-table-wrap">
         <table className="nd-table">
-          <thead><tr><th>#</th><th>Départ</th><th>Destination</th><th>Colis</th><th>Client</th><th>Statut</th><th>Créé le</th><th>Actions</th></tr></thead>
+          <thead><tr><th>#</th><th>Service</th><th>Départ</th><th>Destination</th><th>Colis</th><th>Client</th><th>Statut</th><th>Créé le</th><th>Actions</th></tr></thead>
           <tbody>
-            {loading ? <LoadingRow cols={8}/> : !filtered.length ? <EmptyRow cols={8} msg="Aucune livraison"/> :
+            {loading ? <LoadingRow cols={9}/> : !filtered.length ? <EmptyRow cols={9} msg="Aucune livraison"/> :
               filtered.map(l => (
                 <tr key={l.id}>
                   <td className="nd-table-id">#{l.id}</td>
+                  <td><BadgeService l={l}/></td>
                   <td style={{maxWidth:130,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><small>{l.departAdresse||'—'}</small></td>
                   <td style={{maxWidth:130,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><small>{l.destination||'—'}</small></td>
-                  <td><small>{l.tailleColis||'—'}</small></td>
+                  <td><small>{serviceLivraison(l)==='CARGO' ? (l.descriptionColis||'Cargo') : (l.tailleColis||'—')}</small>{l.aideChargement && <div className="nd-cell-sub">🤝 aide au chargement</div>}</td>
                   <td><small className="nd-cell-sub">ID: {l.clientId||'—'}</small></td>
                   <td><StatusBadge status={l.status||'EN_ATTENTE'}/></td>
                   <td><small className="nd-cell-sub">{fmtDT(l.createdAt)}</small></td>
@@ -114,7 +129,9 @@ export function Livraisons() {
           ['Colis', [detailItem.packageDescription, detailItem.colisSize, detailItem.colisWeight && `${detailItem.colisWeight} kg`].filter(Boolean).join(' · ')],
           ['Client', detailItem.client ? `${detailItem.client.name} · ${detailItem.client.telephone}` : detailItem.clientId],
           ['Livreur', detailItem.chauffeur ? `${detailItem.chauffeur.name} · ${detailItem.chauffeur.telephone}` : (detailItem.chauffeurId || 'Aucun')],
-          ['Véhicule', detailItem.vehiculeType],
+          ['Service', <BadgeService l={detailItem}/>],
+          ['Véhicule', VEHICULES_LIVRAISON[String(detailItem.vehiculeType||'MOTO').toUpperCase()] || detailItem.vehiculeType],
+          ['Aide au chargement', serviceLivraison(detailItem)==='CARGO' ? (detailItem.aideChargement ? 'Oui' : 'Non') : null],
           ['Prix', detailItem.prix != null ? `${Number(detailItem.prix).toLocaleString('fr-FR')} FCFA` : null],
           ['Colis récupéré', detailItem.colisRecupere ? 'Oui' : 'Non'],
           ['Statut', <StatusBadge status={detailItem.status}/>],

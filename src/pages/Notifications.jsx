@@ -20,7 +20,7 @@ const MODELES = [
 /** Icône et couleur par type de notification (comme dans les apps) */
 const TYPES = {
   COURSE: ['🚗', '#f97316', 'Course'], LIVRAISON: ['📦', '#a855f7', 'Livraison'], NOUVELLE_COURSE: ['🚗', '#f97316', 'Nouvelle course'],
-  NOUVELLE_LIVRAISON: ['📦', '#a855f7', 'Nouvelle livraison'], COURSE_PROGRAMMEE: ['📅', '#4f46e5', 'Programmée'],
+  NOUVELLE_LIVRAISON: ['📦', '#F79009', 'Nouvelle livraison / cargo'], COURSE_PROGRAMMEE: ['📅', '#4f46e5', 'Programmée'],
   RESERVATION: ['🎫', '#0d9488', 'Réservation'], PAIEMENT: ['💳', '#0d9488', 'Paiement'], ANNULATION: ['✖', '#ef4444', 'Annulation'],
   SOS: ['🆘', '#dc2626', 'Sécurité'], TRAJET: ['🔔', '#2563eb', 'Alerte trajet'], ANNONCE: ['📣', '#452778', 'Annonce'],
   BIENVENUE: ['👋', '#16a34a', 'Bienvenue'], SYSTEME: ['ℹ', '#64748b', 'Information'],

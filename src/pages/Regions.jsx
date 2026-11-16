@@ -20,7 +20,7 @@ function Interrupteur({ actif, onChange, disabled, titre }) {
 }
 
 const COURTS = {
-  COURSE_VOITURE: 'Voiture', COURSE_MOTO: 'Moto Jakarta', LIVRAISON: 'Livraison',
+  COURSE_VOITURE: 'Voiture', COURSE_MOTO: 'Moto Jakarta', LIVRAISON: 'Livraison', CARGO: 'Cargo',
   TAXI_BOKKO: 'Taxi-Bokko', BUS: 'Bus', ALLO_SENEGAL: 'Allô Sénégal',
 };
 

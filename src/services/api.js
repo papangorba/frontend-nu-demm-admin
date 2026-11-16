@@ -431,9 +431,10 @@ export const serviceDuVehicule = (typeVehicule, typeService) => {
   }
   return typeService || null;
 };
-/** Courses (passagers) ou livraisons (colis) */
+/** Courses (passagers), Livraison (colis à moto) ou Cargo (3 roues, fourgonnette, camion) */
 export const categorieService = s =>
-  ['VOITURE_COURSE', 'MOTO_TAXI', 'TAXI_BOKKO'].includes(s) ? 'Courses' : s ? 'Livraisons' : null;
+  ['VOITURE_COURSE', 'MOTO_TAXI', 'TAXI_BOKKO'].includes(s) ? 'Courses'
+    : s === 'MOTO_2_ROUES' ? 'Livraison' : s ? 'Cargo' : null;
 export const avatarColor = name => {
   const colors = ['#e63946','#2a9d8f','#e9c46a','#264653','#f4a261','#8338ec','#3a86ff','#06d6a0'];
   return colors[(name||'?').charCodeAt(0) % colors.length];

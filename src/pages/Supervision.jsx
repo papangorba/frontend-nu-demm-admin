@@ -6,7 +6,7 @@ import { apiAdmin, apiCommandes, apiLivraisons, fmtDT, money, Audit } from '../s
 import { StatusBadge, MiniCard, Spinner } from '../components/ui';
 import { useToast, useTheme } from '../context/AppContext';
 import CarteGenerale from '../components/CarteGenerale';
-import { iconeVehicule, iconePersonne, iconeDrapeau, libelleVehicule, SENEGAL } from '../components/carteIcones';
+import { iconeVehicule, iconeDemande, iconeDrapeau, libelleVehicule, SENEGAL, SERVICES_DEMANDE, serviceDe } from '../components/carteIcones';
 import { useRegions, SelectZone, CadrerZone, Legende } from '../components/FiltreZone';
 
 const REFRESH_MS = 5000;
@@ -15,6 +15,7 @@ const FILTERS = [
   { id: 'ALL',       label: 'Tout' },
   { id: 'COURSE',    label: '🚗 Courses' },
   { id: 'LIVRAISON', label: '📦 Livraisons' },
+  { id: 'CARGO',     label: '🚚 Cargo' },
   { id: 'ATTENTE',   label: '⏳ En attente' },
   { id: 'ACTIF',     label: '▶ En cours' },
 ];
@@ -93,7 +94,8 @@ export default function Supervision() {
     return items.filter(it => {
       if (zone && it.region !== zone) return false;
       if (filter === 'COURSE' && it.kind !== 'COURSE') return false;
-      if (filter === 'LIVRAISON' && it.kind !== 'LIVRAISON') return false;
+      if (filter === 'LIVRAISON' && serviceDe(it) !== 'LIVRAISON') return false;
+      if (filter === 'CARGO' && serviceDe(it) !== 'CARGO') return false;
       if (filter === 'ATTENTE' && it.status !== 'EN_ATTENTE') return false;
       if (filter === 'ACTIF' && it.status === 'EN_ATTENTE') return false;
       if (!q) return true;
@@ -199,7 +201,7 @@ export default function Supervision() {
             ) : filtered.map(it => (
               <button key={keyOf(it)} className={`sv-item ${selected === keyOf(it) ? 'active' : ''}`} onClick={() => focus(it)}>
                 <div className="sv-item-top">
-                  <span className="sv-kind">{it.kind === 'COURSE' ? '🚗' : '📦'} #{it.id}</span>
+                  <span className="sv-kind" style={{ color: SERVICES_DEMANDE[serviceDe(it)].couleur }}>{SERVICES_DEMANDE[serviceDe(it)].emoji} {SERVICES_DEMANDE[serviceDe(it)].libelle} #{it.id}</span>
                   <StatusBadge status={it.status} />
                 </div>
                 <div className="sv-route">
@@ -241,7 +243,7 @@ export default function Supervision() {
               <Polyline positions={[ll(sel.driver), ll(sel.aBord ? sel.dropoff : sel.pickup)]}
                 pathOptions={{ color: STATUS_COLOR[sel.status] || '#22c55e', weight: 4 }} />
             )}
-            {sel?.pickup && <Marker position={ll(sel.pickup)} icon={iconePersonne({ couleur: '#2563eb' })} />}
+            {sel?.pickup && <Marker position={ll(sel.pickup)} icon={iconeDemande({ service: serviceDe(sel) })} />}
             {sel?.dropoff && <Marker position={ll(sel.dropoff)} icon={iconeDrapeau()} />}
 
             {filtered.map(it => {
@@ -250,13 +252,13 @@ export default function Supervision() {
               const isSel = selected === keyOf(it);
               return (
                 <Marker key={keyOf(it)} position={pos}
-                  icon={it.driver ? iconeTrajet(it, isSel) : iconePersonne({ couleur: '#f59e0b', attente: true })}
+                  icon={it.driver ? iconeTrajet(it, isSel) : iconeDemande({ service: serviceDe(it), attente: true })}
                   zIndexOffset={isSel ? 1000 : 0}
                   eventHandlers={{ click: () => setSelected(keyOf(it)) }}>
                   <Popup>
                     <div className="sv-popup">
                       <div className="sv-popup-title">
-                        {it.kind === 'COURSE' ? '🚗 Course' : '📦 Livraison'} #{it.id}
+                        {SERVICES_DEMANDE[serviceDe(it)].emoji} {SERVICES_DEMANDE[serviceDe(it)].libelle} #{it.id}
                         {it.driver && <small className="nd-cell-sub"> · {libelleVehicule(it.vehicule)}</small>}
                       </div>
                       <div><b>Départ :</b> {it.depart || '—'}</div>

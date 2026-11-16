@@ -76,6 +76,23 @@ export default function Tarifs() {
         </div>
       </div>
 
+      {/* Cargo au même prix que la moto : incohérent (un camion coûte bien plus cher à faire rouler) */}
+      {(() => {
+        const moto = tarifs.find(t => t.code === 'LIVRAISON_MOTO');
+        const pareils = tarifs.filter(t => ['LIVRAISON_TROIS_ROUES', 'LIVRAISON_FOURGONNETTE', 'LIVRAISON_CAMION'].includes(t.code)
+          && moto && calculer(courant(t), 10) <= calculer(courant(moto), 10));
+        return pareils.length > 0 && (
+          <div className="nd-alert nd-alert-warn" style={{ marginBottom: 16 }}>
+            <span>⚠</span>
+            <div>
+              <b>{pareils.map(t => t.libelle).join(', ')}</b> : pas plus cher que la livraison à moto.
+              Le Cargo (3 roues, fourgonnette, camion) devrait coûter plus. Exemple de grille :
+              3 roues 1 000 F + 300 F/km (min. 1 500 F) · fourgonnette 2 500 F + 500 F/km (min. 3 000 F) · camion 5 000 F + 800 F/km (min. 7 500 F).
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="nd-card">
         <div className="nd-table-wrap">
           <table className="nd-table">

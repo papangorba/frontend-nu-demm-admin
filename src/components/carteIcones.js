@@ -18,8 +18,10 @@ export const libelleVehicule = c => LIBELLES_VEHICULE[c] || 'Véhicule';
 /** Forme du véhicule selon son code (serveur : VOITURE, TAXI, MOTO_TAXI, MOTO, TROIS_ROUES, FOURGONNETTE, CAMION) */
 const forme = code => {
   const c = String(code || 'VOITURE').toUpperCase();
+  if (c.includes('TROIS') || c.includes('3')) return 'tricycle';
+  if (c.includes('CAMION')) return 'camion';
+  if (c.includes('FOURGON')) return 'van';
   if (c.includes('MOTO')) return 'moto';
-  if (c.includes('FOURGON') || c.includes('CAMION') || c.includes('TROIS') || c.includes('3')) return 'van';
   return 'car';
 };
 
@@ -31,6 +33,18 @@ const svgVehicule = (code, couleur) => {
         <rect x="1" y="11.5" width="20" height="3" rx="1.5" fill="#1f2a37"/>
         <rect x="6.5" y="13" width="9" height="24" rx="4.5" fill="${couleur}"/>
         <circle cx="11" cy="26" r="5.5" fill="#344054"/><circle cx="11" cy="2.5" r="1.8" fill="#fff8e1"/></svg>`;
+    case 'tricycle':
+      return `<svg viewBox="0 0 30 56" width="19" height="36">
+        <rect x="12.5" y="1.5" width="5" height="10" rx="2.5" fill="#1f2a37"/><rect x="6" y="10.5" width="18" height="3" rx="1.5" fill="#1f2a37"/>
+        <rect x="0.5" y="39" width="5" height="11" rx="2.5" fill="#1f2a37"/><rect x="24.5" y="39" width="5" height="11" rx="2.5" fill="#1f2a37"/>
+        <rect x="10" y="12" width="10" height="14" rx="4.5" fill="${couleur}"/><circle cx="15" cy="20" r="4.5" fill="#344054"/>
+        <rect x="4" y="27" width="22" height="26" rx="2.5" fill="#7a5c00"/><rect x="6.2" y="29.2" width="17.6" height="21.6" rx="1.5" fill="#f2f4f7"/></svg>`;
+    case 'camion':
+      return `<svg viewBox="0 0 36 80" width="20" height="45">
+        <rect x="4" y="3" width="28" height="19" rx="7" fill="${couleur}"/>
+        <path d="M8 9 Q18 5.5 28 9 L27 16 L9 16 Z" fill="#1f2a37"/>
+        <rect x="1.5" y="24" width="33" height="53" rx="2.5" fill="#ffffff" stroke="#98a2b3"/>
+        <rect x="16" y="26" width="4" height="49" fill="${couleur}" opacity=".85"/></svg>`;
     case 'van':
       return `<svg viewBox="0 0 32 66" width="20" height="41">
         <rect x="4" y="3" width="24" height="20" rx="7" fill="${couleur}"/>
@@ -83,6 +97,43 @@ export const iconePersonne = ({ couleur = '#2563eb', attente = false, petit = fa
         <circle cx="17" cy="16.5" r="13" fill="${couleur}"/>
         <circle cx="17" cy="12.5" r="4.2" fill="#fff"/>
         <path d="M9.5 24.5 Q9.5 17.5 17 17.5 Q24.5 17.5 24.5 24.5 Z" fill="#fff"/></svg></div>`,
+    iconSize: [w, h], iconAnchor: [w / 2, h - 1], popupAnchor: [0, -h + 4],
+  });
+  cache.set(cle, icone);
+  return icone;
+};
+
+/**
+ * Les trois services, avec la même couleur et la même icône que dans les apps :
+ * course = personne (vert), livraison = colis (orange, moto), cargo = caisses (bleu, 3 roues / fourgonnette / camion).
+ */
+export const SERVICES_DEMANDE = {
+  COURSE:    { couleur: '#12B76A', libelle: 'Course',    emoji: '🚗' },
+  LIVRAISON: { couleur: '#F79009', libelle: 'Livraison', emoji: '📦' },
+  CARGO:     { couleur: '#1570EF', libelle: 'Cargo',     emoji: '🚚' },
+};
+
+/** Service d'un élément de la supervision (course, ou livraison à moto, ou cargo) */
+export const serviceDe = it => (it?.kind === 'COURSE' ? 'COURSE' : it?.service === 'CARGO' ? 'CARGO' : 'LIVRAISON');
+
+const GLYPHES = {
+  COURSE: '<circle cx="17" cy="12.5" r="4.2" fill="#fff"/><path d="M9.5 24.5 Q9.5 17.5 17 17.5 Q24.5 17.5 24.5 24.5 Z" fill="#fff"/>',
+  LIVRAISON: '<rect x="9.5" y="12" width="15" height="11" rx="1.5" fill="#fff"/><rect x="8.5" y="9.5" width="17" height="4" rx="1.2" fill="#fff" stroke="#c46a00" stroke-width="1"/><rect x="15.8" y="9.5" width="2.4" height="13.5" fill="#f79009"/>',
+  CARGO: '<g fill="#fff" stroke="#0b4fb3" stroke-width="1"><rect x="8" y="15.5" width="8.5" height="8"/><rect x="17.5" y="15.5" width="8.5" height="8"/><rect x="12.5" y="8" width="9" height="7.5"/></g><rect x="7.5" y="23.8" width="19" height="2" fill="#fff"/>',
+};
+
+/** Point de départ d'une demande : épingle de la couleur du service ; « attente » = pulse (pas encore de chauffeur) */
+export const iconeDemande = ({ service = 'COURSE', attente = false, petit = false } = {}) => {
+  const s = SERVICES_DEMANDE[service] ? service : 'COURSE';
+  const cle = `d-${s}-${attente}-${petit}`;
+  if (cache.has(cle)) return cache.get(cle);
+  const w = petit ? 22 : 30, h = petit ? 30 : 40;
+  const icone = L.divIcon({
+    className: '',
+    html: `<div class="cv-personne${attente ? ' attente' : ''}" style="--pulse:${SERVICES_DEMANDE[s].couleur}">
+      <svg viewBox="0 0 34 46" width="${w}" height="${h}">
+        <path d="M17 44 Q17 33 6 26 A15 15 0 1 1 28 26 Q17 33 17 44 Z" fill="#fff"/>
+        <circle cx="17" cy="16.5" r="13" fill="${SERVICES_DEMANDE[s].couleur}"/>${GLYPHES[s]}</svg></div>`,
     iconSize: [w, h], iconAnchor: [w / 2, h - 1], popupAnchor: [0, -h + 4],
   });
   cache.set(cle, icone);

@@ -130,7 +130,7 @@ export default function Chauffeurs() {
 
   const nb = (...s) => all.filter(c => s.includes(c.service)).length;
   const counts = { total:all.length, course:nb('VOITURE_COURSE'), motoTaxi:nb('MOTO_TAXI'), taxi:nb('TAXI_BOKKO'),
-    livraison:nb('MOTO_2_ROUES','MOTO_3_ROUES','FOURGONNETTE','CAMION'), sansVehicule:all.filter(c => !c.vehicule).length };
+    livraison:nb('MOTO_2_ROUES'), cargo:nb('MOTO_3_ROUES','FOURGONNETTE','CAMION'), sansVehicule:all.filter(c => !c.vehicule).length };
 
   const inp = (field,props={}) => <input {...props} className="nd-input" value={form[field]} onChange={e=>setForm(f=>({...f,[field]:e.target.value}))} />;
 
@@ -168,7 +168,8 @@ export default function Chauffeurs() {
         <MiniCard color="var(--nd-blue)" value={counts.course} label="Voitures (courses)" />
         <MiniCard color="var(--nd-amber)" value={counts.motoTaxi} label="Moto-taxis" />
         <MiniCard color="var(--nd-teal)" value={counts.taxi} label="Taxi-Bokko" />
-        <MiniCard color="var(--nd-purple)" value={counts.livraison} label="Livreurs" />
+        <MiniCard color="#F79009" value={counts.livraison} label="Livreurs (moto)" />
+        <MiniCard color="#1570EF" value={counts.cargo} label="Cargo" />
         <MiniCard color="var(--nd-orange)" value={counts.sansVehicule} label="Sans véhicule" />
       </div>
       {nbEntreprise > 0 && (
