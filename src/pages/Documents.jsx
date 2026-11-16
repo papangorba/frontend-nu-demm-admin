@@ -81,7 +81,7 @@ export default function Documents() {
       <div className="nd-page-header">
         <div className="nd-page-header-left">
           <h1>Documents chauffeurs</h1>
-          <p>Permis, carte grise, assurance envoyés depuis l'app chauffeur. Le chauffeur est notifié à chaque décision et 15 jours avant l'expiration.</p>
+          <p>Documents envoyés depuis l'app chauffeur : permis, carte grise et assurance (voiture, cargo) ; une pièce d'identité au choix — carte d'identité, permis ou passeport — pour les motos. Le chauffeur est notifié à chaque décision et 15 jours avant l'expiration.</p>
         </div>
         <button className="nd-btn nd-btn-ghost" onClick={() => charger()}>↻ Actualiser</button>
       </div>

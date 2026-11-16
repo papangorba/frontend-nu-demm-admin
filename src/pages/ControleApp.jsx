@@ -272,8 +272,10 @@ export default function ControleApp({ mode = 'apps' }) {
             <div>
               <b>Documents obligatoires pour travailler</b>
               <small className="nd-cell-sub">
-                Activé : un chauffeur ne reçoit plus de courses tant que son permis, sa carte grise et son assurance
-                ne sont pas validés (rubrique « Documents chauffeurs »). Désactivé : les documents sont demandés mais pas bloquants.
+                Activé : un chauffeur ne reçoit plus de demandes tant que ses documents ne sont pas validés
+                (rubrique « Documents chauffeurs ») : permis, carte grise et assurance pour une voiture ou un véhicule cargo ;
+                une seule pièce au choix (carte d'identité, permis ou passeport) pour une moto 2 roues ou un moto-taxi Jakarta.
+                Désactivé : les documents sont demandés mais pas bloquants.
               </small>
             </div>
             <Interrupteur actif={on('DOCUMENTS_OBLIGATOIRES')} onChange={v => set('DOCUMENTS_OBLIGATOIRES', v)} />

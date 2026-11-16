@@ -182,12 +182,13 @@ export default function FicheUtilisateur({ userId, onClose, onOuvrirAutre }) {
 
                 <Section icone={FileText} titre="Documents" alerte={f.documents && !f.documents.enRegle}>
                   <div style={{ marginBottom: 8 }}>{f.documents.enRegle
-                    ? <span className="nd-badge badge-success"><CheckCircle2 size={11} /> En règle — reçoit des courses</span>
-                    : <span className="nd-badge badge-danger"><XCircle size={11} /> Pas en règle{f.documents.obligatoires ? ' — ne reçoit pas de courses' : ''}</span>}</div>
+                    ? <span className="nd-badge badge-success"><CheckCircle2 size={11} /> En règle — reçoit des demandes</span>
+                    : <span className="nd-badge badge-danger"><XCircle size={11} /> Pas en règle{f.documents.obligatoires ? ' — ne reçoit pas de demandes' : ''}</span>}</div>
+                  {f.documents.consigne && <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 8 }}>{f.documents.consigne}</small>}
                   {f.documents.documents.map(d => {
                     const [cls, lib] = STATUT_DOC[d.statut] || ['badge-secondary', d.statut];
                     return <div key={d.type} className="nd-detail-row" style={{ alignItems: 'center' }}>
-                      <span className="nd-detail-label">{d.libelle}{d.obligatoire ? ' *' : ''}</span>
+                      <span className="nd-detail-label">{d.libelle}{d.obligatoire ? ' *' : d.auChoix ? ' (au choix)' : ''}</span>
                       <span className="nd-detail-val" style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <span className={`nd-badge ${cls}`}>{lib}</span>
                         {d.dateExpiration && <small className="nd-cell-sub">exp. {fmtDate(d.dateExpiration)}</small>}
