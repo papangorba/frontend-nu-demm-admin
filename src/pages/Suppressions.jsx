@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserX, Phone, CheckCircle2, XCircle, RefreshCw, ExternalLink, AlertTriangle } from 'lucide-react';
+import { UserX, Phone, CheckCircle2, XCircle, RefreshCw, ExternalLink, AlertTriangle, Smartphone, Globe } from 'lucide-react';
 import { apiSuppressions, Audit, fmtDT, getBaseUrl } from '../services/api';
 import { Spinner } from '../components/ui';
 import { useToast } from '../context/AppContext';
@@ -8,7 +8,7 @@ import { useToast } from '../context/AppContext';
  * Demandes de suppression de compte envoyées depuis la page web publique /supprimer-compte
  * (exigée par Google Play). La connexion aux apps se fait avec le seul numéro : avant de supprimer,
  * appelez le numéro pour vérifier que la demande vient bien du titulaire du compte.
- * (Depuis les apps, la suppression est immédiate et n'apparaît pas ici.)
+ * Les suppressions faites par la personne dans l'app (immédiates) sont aussi listées ici (source « App »).
  */
 
 const STATUTS = {
@@ -59,8 +59,10 @@ export default function Suppressions() {
     finally { setBusy(null); }
   };
 
-  const liste = (demandes || []).filter(d => filtre === 'TOUTES' || d.statut === filtre);
+  const liste = (demandes || []).filter(d =>
+    filtre === 'TOUTES' || (filtre === 'APP' ? d.source === 'APP' : d.statut === filtre));
   const enAttente = (demandes || []).filter(d => d.statut === 'EN_ATTENTE').length;
+  const depuisApps = (demandes || []).filter(d => d.source === 'APP').length;
 
   return (
     <div className="fade-in">
@@ -69,13 +71,14 @@ export default function Suppressions() {
           <h1>Suppressions de compte</h1>
           <p>Demandes reçues sur la page web <a href={`${getBaseUrl()}/supprimer-compte`} target="_blank" rel="noreferrer">/supprimer-compte <ExternalLink size={12} /></a>.
             Appelez toujours le numéro avant de supprimer : la connexion aux apps se fait sans mot de passe.
-            Les suppressions faites depuis les apps sont immédiates et n'apparaissent pas ici.</p>
+            Les comptes supprimés par la personne dans l'app (suppression immédiate) apparaissent dans « Depuis les apps ».</p>
         </div>
         <button className="nd-btn nd-btn-ghost" onClick={charger}><RefreshCw size={15} /> Actualiser</button>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        {[['EN_ATTENTE', `À traiter${enAttente ? ` (${enAttente})` : ''}`], ['TOUTES', 'Historique']].map(([k, l]) => (
+        {[['EN_ATTENTE', `À traiter${enAttente ? ` (${enAttente})` : ''}`],
+          ['APP', `Depuis les apps${depuisApps ? ` (${depuisApps})` : ''}`], ['TOUTES', 'Historique']].map(([k, l]) => (
           <button key={k} className={`nd-btn nd-btn-sm ${filtre === k ? 'nd-btn-primary' : 'nd-btn-outline'}`} onClick={() => setFiltre(k)}>{l}</button>
         ))}
       </div>
@@ -83,7 +86,8 @@ export default function Suppressions() {
       {demandes === null ? <Spinner center /> : liste.length === 0 ? (
         <div className="nd-card"><div className="nd-card-body" style={{ textAlign: 'center', padding: 40 }}>
           <CheckCircle2 size={40} color="var(--nd-green)" />
-          <p className="nd-cell-sub">{filtre === 'EN_ATTENTE' ? 'Aucune demande à traiter' : 'Aucune demande pour le moment'}</p>
+          <p className="nd-cell-sub">{filtre === 'EN_ATTENTE' ? 'Aucune demande à traiter'
+            : filtre === 'APP' ? "Aucun compte supprimé depuis les apps" : 'Aucune demande pour le moment'}</p>
         </div></div>
       ) : (
         <div className="nd-card"><div className="nd-table-wrap">
@@ -96,7 +100,9 @@ export default function Suppressions() {
                 const [cls, label] = STATUTS[d.statut] || ['badge-secondary', d.statut];
                 return (
                   <tr key={d.id}>
-                    <td><b>#{d.id}</b><div className="nd-cell-sub">{fmtDT(d.creeLe)}</div><div className="nd-cell-sub">{APPS[d.application] || d.application}</div></td>
+                    <td><b>#{d.id}</b><div className="nd-cell-sub">{fmtDT(d.creeLe)}</div><div className="nd-cell-sub">{APPS[d.application] || d.application}</div>
+                      <span className={`nd-badge ${d.source === 'APP' ? 'badge-info' : 'badge-secondary'}`} style={{ display: 'inline-flex', gap: 4, alignItems: 'center', marginTop: 4 }}>
+                        {d.source === 'APP' ? <><Smartphone size={12} /> App</> : <><Globe size={12} /> Page web</>}</span></td>
                     <td><a href={`tel:+221${d.telephone}`} style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}><Phone size={13} />{joli(d.telephone)}</a></td>
                     <td>
                       {d.compteTrouve ? <>
@@ -104,7 +110,9 @@ export default function Suppressions() {
                         <div className="nd-cell-sub">{d.role === 'CHAUFFEUR' ? 'Chauffeur' : 'Client'} · inscrit le {fmtDT(d.dateInscription)}</div>
                         {d.empechement && <div className="nd-cell-sub" style={{ color: 'var(--nd-orange, #c77700)', display: 'flex', gap: 4, alignItems: 'center' }}>
                           <AlertTriangle size={13} /> {d.empechement}</div>}
-                      </> : <span className="nd-cell-sub">{d.statut === 'EN_ATTENTE' ? 'Aucun compte avec ce numéro' : '—'}</span>}
+                      </> : d.source === 'APP'
+                        ? <span className="nd-cell-sub">Compte #{d.userIdSupprime} supprimé par la personne</span>
+                        : <span className="nd-cell-sub">{d.statut === 'EN_ATTENTE' ? 'Aucun compte avec ce numéro' : '—'}</span>}
                     </td>
                     <td style={{ maxWidth: 260 }}>{d.motif || <span className="nd-cell-sub">—</span>}</td>
                     <td><span className={`nd-badge ${cls}`}>{label}</span>

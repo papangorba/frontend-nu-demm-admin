@@ -333,6 +333,11 @@ export const apiRegions = {
   partout:  (service, actif)  => put('/api/admin/regions', { service, actif }),
 };
 
+/** Pastilles du menu : nouveautés par module depuis la dernière visite ({ module: 'aaaa-mm-jjThh:mm:ss' }) */
+export const apiNouveautes = {
+  compter: depuis => get(`/api/admin/nouveautes?${new URLSearchParams(depuis).toString()}`),
+};
+
 export const apiSuppressions = {
   liste:   ()         => get('/api/admin/suppressions'),
   traiter: id         => post(`/api/admin/suppressions/${id}/traiter`),

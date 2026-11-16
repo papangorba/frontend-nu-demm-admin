@@ -7,6 +7,7 @@ import {
 import { Auth } from '../../services/api';
 import { Avatar, RoleBadge } from '../ui';
 import { useAuth, useTheme } from '../../context/AppContext';
+import { useNouveautes } from './nouveautes';
 
 /** Icônes du menu (lignes fines, comme les apps professionnelles). */
 export const ICONES = {
@@ -76,6 +77,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   const { user, logout } = useAuth();
   const { theme, setDark, setLight } = useTheme();
   const remaining = Auth.tokenRemainingMinutes();
+  const nouveautes = useNouveautes();
 
   return (
     <aside className={`nd-sidebar${collapsed ? ' collapsed' : ''}`}>
@@ -116,16 +118,19 @@ export default function Sidebar({ collapsed, onToggle }) {
               <ul>
                 {visibleItems.map(m => {
                   const Icone = ICONES[m.id];
+                  const n = nouveautes[m.id] || 0;
                   return (
                   <li key={m.id}>
                     <NavLink
                       to={m.to}
-                      title={m.label}
+                      title={n ? `${m.label} — ${n} nouveau${n > 1 ? 'x' : ''}` : m.label}
                       className={({ isActive }) => isActive ? 'active' : ''}
                       end={m.to === '/' || m.to === '/mon-entreprise'}
                     >
-                      <span className="nd-menu-icon">{Icone && <Icone />}</span>
+                      <span className="nd-menu-icon">{Icone && <Icone />}
+                        {n > 0 && <span className="nd-menu-point" aria-hidden="true" />}</span>
                       <span className="nd-menu-label">{m.label}</span>
+                      {n > 0 && <span className="nd-menu-nouveau" aria-label={`${n} nouveautés`}>{n > 99 ? '99+' : n}</span>}
                     </NavLink>
                   </li>
                   );

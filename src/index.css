@@ -998,3 +998,12 @@ h1,h2,h3,.nd-page-title,.nd-card-title,.nd-brand-name,.nd-welcome-title,.nd-logi
   .lg-atouts { gap:6px; }
   .lg-atouts > div { font-size:11px; }
 }
+
+/* ─── Pastilles rouges du menu (nouveautés depuis la dernière visite) ─── */
+.nd-menu-icon { position:relative; }
+.nd-menu-nouveau { margin-left:auto; min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:#e5262e; color:#fff;
+  font-size:11px; font-weight:800; line-height:20px; text-align:center; box-shadow:0 0 0 2px var(--nd-surface); animation:nd-pop .25s ease; }
+.nd-menu-point { display:none; position:absolute; top:-3px; right:-4px; width:9px; height:9px; border-radius:50%; background:#e5262e; box-shadow:0 0 0 2px var(--nd-surface); }
+.nd-sidebar.collapsed .nd-menu-nouveau { display:none; }
+.nd-sidebar.collapsed .nd-menu-point { display:block; }
+@keyframes nd-pop { from { transform:scale(.4); opacity:0 } to { transform:scale(1); opacity:1 } }
