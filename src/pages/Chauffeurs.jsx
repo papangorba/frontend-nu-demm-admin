@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUsers, apiFiche, apiVehicules, serviceIcon, serviceDuVehicule, categorieService, fmtDate, fmtDT, Audit } from '../services/api';
 import FicheUtilisateur, { BadgeInactivite, ilYa, joursInactif } from '../components/FicheUtilisateur';
-import { Avatar, StatusBadge, MiniCard, Modal, Spinner, EmptyRow, LoadingRow } from '../components/ui';
+import { Avatar, MiniCard, Modal, EmptyRow, LoadingRow } from '../components/ui';
+import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 
 const TYPES = ['VOITURE_COURSE','MOTO_TAXI','TAXI_BOKKO','MOTO_2_ROUES','MOTO_3_ROUES','FOURGONNETTE','CAMION'];
@@ -55,7 +56,7 @@ export default function Chauffeurs() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = all.filter(c => {
     const q = search.toLowerCase();

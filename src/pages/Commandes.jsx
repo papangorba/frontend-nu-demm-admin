@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { apiCommandes, fmtDT, Audit } from '../services/api';
 import { StatusBadge, MiniCard, Modal, EmptyRow, LoadingRow } from '../components/ui';
+import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 
 const STATUSES = ['PROGRAMMEE','EN_ATTENTE','ACCEPTEE','EN_COURS','TERMINEE','ANNULEE','EXPIREE'];
@@ -21,7 +22,7 @@ export default function Commandes() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = all.filter(c => {
     const q = search.toLowerCase();

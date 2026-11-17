@@ -7,6 +7,7 @@ import {
   StatusBadge, RoleBadge, Avatar, MiniCard, Modal,
   EmptyRow, LoadingRow, DetailRow
 } from '../components/ui';
+import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 import StatsLivraisons from '../components/StatsLivraisons';
 
@@ -63,7 +64,7 @@ export function Livraisons() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = all.filter(l => {
     const q = search.toLowerCase();
@@ -210,7 +211,7 @@ export function Trajets() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = all.filter(t => {
     const q = search.toLowerCase();
@@ -336,7 +337,7 @@ export function Vehicules() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = all.filter(v => {
     const q = search.toLowerCase();
@@ -405,7 +406,7 @@ export function Reservations() {
     } catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const del = async id => {
     if (!window.confirm('Supprimer cette réservation ?')) return;
@@ -535,7 +536,7 @@ export function Admins() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const del = async id => {
     if (!window.confirm('Supprimer cet admin ?')) return;
@@ -622,7 +623,7 @@ export function AuditLog() {
   const [filterStatut, setFilterStatut] = useState('');
 
   const load = () => setLogs(Audit.all());
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = useMemo(() => logs.filter(l => {
     const q = search.toLowerCase();
@@ -637,8 +638,6 @@ export function AuditLog() {
     if (!window.confirm('Effacer tout le journal ?')) return;
     Audit.clear(); load();
   };
-
-  const user = Auth.user();
 
   return (
     <div className="fade-in">

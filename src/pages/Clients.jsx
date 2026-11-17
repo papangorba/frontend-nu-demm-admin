@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiUsers, apiFiche, fmtDate, fmtDT, Audit } from '../services/api';
 import FicheUtilisateur, { BadgeInactivite, ilYa, joursInactif } from '../components/FicheUtilisateur';
 import { Avatar, Modal, EmptyRow, LoadingRow } from '../components/ui';
+import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 
 export default function Clients() {
@@ -33,7 +34,7 @@ export default function Clients() {
     catch(e) { toast(e.message,'error'); }
     finally { setLoading(false); }
   };
-  useEffect(() => { load(); }, []);
+  useAuChargement(load);
 
   const filtered = all.filter(c => {
     const q = search.toLowerCase();
