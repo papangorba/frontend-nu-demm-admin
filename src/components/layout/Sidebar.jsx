@@ -1,3 +1,4 @@
+import EclairsBarre from './EclairsBarre';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Radar, Car, IdCard, Users, ShoppingBag, Truck, Route, CarFront, CalendarDays,
@@ -84,6 +85,7 @@ export default function Sidebar({ collapsed, onToggle }) {
     <aside className={`nd-sidebar${collapsed ? ' collapsed' : ''}`}>
       {/* Brand */}
       <div className="nd-sidebar-brand">
+        <EclairsBarre />
         <div className="nd-brand-icon"><img src="/logo.png" alt="Ñu Demm" /></div>
         <div className="nd-brand-text">
           <span className="nd-brand-name">Ñu Demm</span>

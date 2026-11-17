@@ -981,7 +981,40 @@ h1,h2,h3,.nd-page-title,.nd-card-title,.nd-brand-name,.nd-welcome-title,.nd-logi
   50% { left:50%; bottom:calc(var(--lg-base) + 30px); transform:rotate(4deg); }
   75% { left:76%; bottom:calc(var(--lg-base) + 34px); transform:rotate(-8deg); }
   100% { left:106%; bottom:calc(var(--lg-base) + 52px); transform:rotate(-14deg); } }
+/* ── Décorations (animations seulement, mêmes effets que les apps mobiles) ── */
+/* Éclairs sur la barre du haut et l'en-tête du menu */
+.nd-topbar, .nd-sidebar-brand { position:relative; overflow:hidden; }
+.nd-topbar { position:sticky; }
+.nd-topbar > :not(.nd-eclairs), .nd-sidebar-brand > :not(.nd-eclairs) { position:relative; z-index:1; }
+.nd-eclairs { position:absolute; inset:0; pointer-events:none; z-index:0; }
+.nd-eclairs-voile { position:absolute; inset:0; background:var(--nd-primary); opacity:0; animation:nd-voile 7.3s infinite; }
+.nd-eclair { position:absolute; top:-4px; height:115%; width:auto; opacity:0; animation:nd-eclair 8s infinite;
+  filter:drop-shadow(0 0 4px rgba(171,113,173,.9)); }
+.nd-eclair path { fill:#AB71AD; }
+[data-theme="dark"] .nd-eclair path { fill:#fff; }
+.nd-sidebar.collapsed .nd-eclair { display:none; }
+@keyframes nd-eclair { 0%,84% { opacity:0 } 86% { opacity:.55 } 88% { opacity:.08 } 90.5% { opacity:.45 } 94%,100% { opacity:0 } }
+@keyframes nd-voile { 0%,84% { opacity:0 } 86% { opacity:.05 } 88% { opacity:0 } 90.5% { opacity:.035 } 94%,100% { opacity:0 } }
+
+/* Apparition floue → nette des blocs de chaque page, en cascade (rien ne reste appliqué après) */
+.nd-apparition > * > * { animation:nd-floue .65s cubic-bezier(.22,1,.36,1) backwards; }
+.nd-apparition > * > :nth-child(2) { animation-delay:.07s; }
+.nd-apparition > * > :nth-child(3) { animation-delay:.14s; }
+.nd-apparition > * > :nth-child(4) { animation-delay:.21s; }
+.nd-apparition > * > :nth-child(5) { animation-delay:.28s; }
+.nd-apparition > * > :nth-child(n+6) { animation-delay:.35s; }
+.nd-apparition .nd-stat-grid > * { animation:nd-floue .65s cubic-bezier(.22,1,.36,1) backwards; }
+.nd-apparition .nd-stat-grid > :nth-child(2) { animation-delay:.08s; }
+.nd-apparition .nd-stat-grid > :nth-child(3) { animation-delay:.16s; }
+.nd-apparition .nd-stat-grid > :nth-child(n+4) { animation-delay:.24s; }
+@keyframes nd-floue { from { opacity:0; filter:blur(10px); transform:translateY(14px); } to { opacity:1; filter:none; transform:none; } }
+
+/* Pression douce : le bouton s'enfonce un peu sous le clic */
+.nd-btn, .nd-icon-btn, .nd-sidebar-nav ul li a { transition:transform .14s ease, background var(--nd-transition), color var(--nd-transition), border-color var(--nd-transition), box-shadow var(--nd-transition); }
+.nd-btn:active:not(:disabled), .nd-icon-btn:active, .nd-sidebar-nav ul li a:active { transform:scale(.96); }
+
 @media (prefers-reduced-motion: reduce) {
+  .nd-eclair, .nd-eclairs-voile, .nd-apparition > * > *, .nd-apparition .nd-stat-grid > * { animation:none; }
   .lg-flash, .lg-eclair, .lg-carte-eclairs path, .lg-voiture { animation:none; }
   .lg-voiture { left:30%; }
 }

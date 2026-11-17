@@ -5,6 +5,7 @@ import { Auth } from '../../services/api';
 import { Avatar } from '../ui';
 import { useAuth, useTheme } from '../../context/AppContext';
 import { ICONES, MENU_SECTIONS } from './Sidebar';
+import EclairsBarre from './EclairsBarre';
 
 /** Titre + icône de chaque page, tirés du menu (une seule source). */
 const PAGES = Object.fromEntries(
@@ -33,6 +34,7 @@ export default function Topbar({ onMenuClick }) {
 
   return (
     <header className="nd-topbar">
+      <EclairsBarre />
       <div className="nd-topbar-left">
         <button className="nd-icon-btn" onClick={onMenuClick} title="Réduire / agrandir le menu"><Menu /></button>
         <div className="nd-page-title">{Icone && <Icone />}{page.label}</div>

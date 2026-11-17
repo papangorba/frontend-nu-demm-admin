@@ -25,7 +25,10 @@ export default function AppLayout() {
           <Topbar onMenuClick={() => setCollapsed(c => !c)} />
           <BandeauSos />
           <div className="nd-content">
-            <Outlet />
+            {/* Chaque page arrive floue puis devient nette, ses blocs l'un après l'autre (comme dans les apps) */}
+            <div key={location.pathname} className="nd-apparition">
+              <Outlet />
+            </div>
           </div>
         </div>
       </div>
