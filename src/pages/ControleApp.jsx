@@ -198,6 +198,41 @@ export default function ControleApp({ mode = 'apps' }) {
 
       {!sessions && <>
       <div className="nd-card" style={{ marginTop: 16 }}>
+        <div className="nd-card-header"><span className="nd-card-title">✨ Effets visuels des apps</span></div>
+        <div className="nd-card-body">
+          <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 12 }}>
+            Ciel animé sur les barres du haut, les menus et le centre de notifications des deux apps.
+            Les apps relisent ces réglages toutes les 30 secondes : pas besoin de les fermer.
+          </small>
+          <div className="nd-form-group" style={{ marginBottom: 14 }}>
+            <label>Effets du ciel</label>
+            <select className="nd-input" style={{ maxWidth: 420 }} value={form.CIEL_MODE || 'AUTO'}
+              onChange={e => set('CIEL_MODE', e.target.value)}>
+              <option value="AUTO">Automatique : éclairs + soleil le jour, lune et étoiles la nuit</option>
+              <option value="ECLAIRS">Éclairs seulement</option>
+              <option value="ASTRES">Soleil / lune et étoiles seulement (sans éclairs)</option>
+              <option value="AUCUN">Aucun effet</option>
+            </select>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+            {[['ECLAIRS_BARRES_SECONDES', 'Éclairs des barres du haut et menus', '5'],
+              ['ECLAIRS_NOTIFS_SECONDES', 'Éclairs du centre de notifications', '2']].map(([cle, nom, defaut]) => (
+              <div key={cle} className="nd-form-group">
+                <label>{nom}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="nd-cell-sub">un toutes les</span>
+                  <input className="nd-input" type="number" min={1} max={60} style={{ maxWidth: 90 }} placeholder={defaut}
+                    value={form[cle] ?? ''} onChange={e => set(cle, e.target.value.trim())} />
+                  <span className="nd-cell-sub">secondes</span>
+                </div>
+                <small className="nd-cell-sub">De 1 à 60 · plus petit = plus fréquent (moyenne, avec un peu de hasard)</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="nd-card" style={{ marginTop: 16 }}>
         <div className="nd-card-header"><span className="nd-card-title">⏱️ Demandes chez le chauffeur</span></div>
         <div className="nd-card-body">
           <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 12 }}>
