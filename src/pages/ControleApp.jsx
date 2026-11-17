@@ -214,6 +214,21 @@ export default function ControleApp({ mode = 'apps' }) {
               <option value="AUCUN">Aucun effet</option>
             </select>
           </div>
+          <div className="nd-form-group" style={{ marginBottom: 14 }}>
+            <label>Thème de fête</label>
+            <select className="nd-input" style={{ maxWidth: 420 }} value={form.THEME_FETE || 'AUCUN'}
+              onChange={e => set('THEME_FETE', e.target.value)}>
+              <option value="AUCUN">Aucun (ciel normal)</option>
+              <option value="TABASKI">🐑 Tabaski : croissant et étoiles dorés</option>
+              <option value="KORITE">🌙 Korité : croissant et étoiles dorés</option>
+              <option value="MAGAL">✨ Magal : rayons de lumière dorée</option>
+              <option value="NOEL">❄️ Noël : flocons de neige</option>
+              <option value="NOUVEL_AN">🎆 Nouvel An : feux d'artifice</option>
+              <option value="CAN">⚽ CAN / Lions : confettis vert-jaune-rouge</option>
+              <option value="INDEPENDANCE">🇸🇳 4 avril : ruban et étoile verte</option>
+            </select>
+            <small className="nd-cell-sub">Remplace le soleil / la lune sur les barres des deux apps, en direct. Pensez à remettre « Aucun » après la fête.</small>
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
             {[['ECLAIRS_BARRES_SECONDES', 'Éclairs des barres du haut et menus', '5'],
               ['ECLAIRS_NOTIFS_SECONDES', 'Éclairs du centre de notifications', '2']].map(([cle, nom, defaut]) => (
