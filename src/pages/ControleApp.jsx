@@ -211,6 +211,8 @@ export default function ControleApp({ mode = 'apps' }) {
               <option value="AUTO">Automatique : éclairs + soleil le jour, lune et étoiles la nuit</option>
               <option value="ECLAIRS">Éclairs seulement</option>
               <option value="ASTRES">Soleil / lune et étoiles seulement (sans éclairs)</option>
+              <option value="PLUIE">Pluie (gouttes qui tombent, sans éclairs)</option>
+              <option value="ORAGE">Orage : pluie + éclairs</option>
               <option value="AUCUN">Aucun effet</option>
             </select>
           </div>
