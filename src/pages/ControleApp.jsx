@@ -198,6 +198,25 @@ export default function ControleApp({ mode = 'apps' }) {
 
       {!sessions && <>
       <div className="nd-card" style={{ marginTop: 16 }}>
+        <div className="nd-card-header"><span className="nd-card-title">⏱️ Demandes chez le chauffeur</span></div>
+        <div className="nd-card-body">
+          <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 12 }}>
+            Dans l'app chauffeur, la demande la plus proche s'affiche devant avec un compte à rebours. Sans réponse
+            à la fin, elle est écartée pour ce chauffeur et la suivante passe devant (les autres chauffeurs la voient toujours).
+          </small>
+          <div className="nd-form-group">
+            <label>Temps pour répondre à une demande</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input className="nd-input" type="number" min={0} max={300} style={{ maxWidth: 110 }} placeholder="30"
+                value={form.DELAI_REPONSE_CHAUFFEUR ?? ''} onChange={e => set('DELAI_REPONSE_CHAUFFEUR', e.target.value.trim())} />
+              <span className="nd-cell-sub">secondes</span>
+            </div>
+            <small className="nd-cell-sub">De 0 à 300 · 0 = pas de compte à rebours (la demande reste jusqu'à ce que le chauffeur l'accepte ou l'ignore)</small>
+          </div>
+        </div>
+      </div>
+
+      <div className="nd-card" style={{ marginTop: 16 }}>
         <div className="nd-card-header"><span className="nd-card-title">Prix négociés</span></div>
         <div className="nd-card-body">
           <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 12 }}>
