@@ -51,23 +51,23 @@ export default function ControleApp({ mode = 'apps' }) {
     try { const c = await apiControle.config(); setConfig(c); setForm(c); }
     catch (e) { toast(e.message, 'error'); }
   };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { charger(); }, []);
-
   const set = (k, v) => setForm(f => ({ ...f, [k]: String(v) }));
   const [verification, setVerification] = useState(false);
-  /** Relit les stores sans toucher aux modifications pas encore enregistrées */
-  const verifierStores = async () => {
+  /** Relit les stores sans toucher aux modifications pas encore enregistrées ([discret] : sans message) */
+  const verifierStores = async (discret = false) => {
     setVerification(true);
     try {
       const c = await apiControle.verifierStores();
       const lues = Object.fromEntries(Object.entries(c).filter(([k]) => k.startsWith('VERSION_STORE_') || k === 'VERSIONS_VERIFIEES_LE'));
-      setConfig(x => ({ ...x, ...lues }));
+      setConfig(x => (x ? { ...x, ...lues } : x));
       setForm(f => ({ ...f, ...lues }));
-      toast('Versions des stores vérifiées', 'success');
-    } catch (e) { toast(e.message, 'error'); }
+      if (!discret) toast('Versions des stores vérifiées', 'success');
+    } catch (e) { if (!discret) toast(e.message, 'error'); }
     finally { setVerification(false); }
   };
+  // À l'ouverture : la configuration, puis les versions des stores relues tout de suite
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { charger().then(() => { if (!sessions) verifierStores(true); }); }, []);
   const on = k => form[k] === 'true';
   const modifie = config && Object.keys(form).some(k => form[k] !== config[k]);
 
@@ -154,15 +154,15 @@ export default function ControleApp({ mode = 'apps' }) {
                 <div className="nd-form-group" style={{ marginTop: 14 }}>
                   <label>Version publiée sur les stores (détectée toute seule)</label>
                   <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-                    {[['IOS', '🍎 App Store'], ['ANDROID', '🤖 Play Store']].map(([p, nom]) => {
-                      const v = form[`VERSION_STORE_${a.id}_${p}`];
-                      return (
+                    {[['IOS', '🍎 App Store'], ['ANDROID', '🤖 Play Store']]
+                      .filter(([p]) => form[`VERSION_STORE_${a.id}_${p}`]) // seulement les stores où l'app est publiée
+                      .map(([p, nom]) => (
                         <div key={p}>
-                          {nom} : <b>{v || 'pas encore publiée'}</b>
-                          {v && <span className="nd-cell-sub"> · parue le {quand(form[`VERSION_STORE_${a.id}_${p}_DEPUIS`])}</span>}
+                          {nom} : <b>{form[`VERSION_STORE_${a.id}_${p}`]}</b>
+                          <span className="nd-cell-sub"> · parue le {quand(form[`VERSION_STORE_${a.id}_${p}_DEPUIS`])}</span>
                         </div>
-                      );
-                    })}
+                      ))}
+                    {verification && <span className="nd-cell-sub">Vérification des stores…</span>}
                   </div>
                 </div>
                 <div className="cp-ligne" style={{ marginTop: 14 }}>
@@ -196,7 +196,7 @@ export default function ControleApp({ mode = 'apps' }) {
       <div className="nd-card" style={{ marginTop: 16 }}>
         <div className="nd-card-header">
           <span className="nd-card-title">🔄 Mises à jour des apps</span>
-          <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={verification} onClick={verifierStores}>
+          <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={verification} onClick={() => verifierStores()}>
             {verification ? 'Vérification…' : 'Vérifier les stores maintenant'}
           </button>
         </div>
