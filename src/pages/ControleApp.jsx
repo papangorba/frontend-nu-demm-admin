@@ -344,12 +344,12 @@ export default function ControleApp({ mode = 'apps' }) {
           </small>
           <div className="cp-ligne" style={{ marginBottom: 14 }}>
             <div>
-              <b>Code SMS obligatoire</b>
+              <b>Code SMS activé</b>
               <small className="nd-cell-sub">
-                Activé : impossible de se connecter ou de s'inscrire sans le code reçu par SMS.
-                Désactivé : les anciennes versions des apps (sans code) fonctionnent encore ; le code saisi dans les
-                nouvelles est quand même vérifié. À activer quand tout le monde a mis l'app à jour
-                (montez aussi la « version minimale » ci-dessus).
+                Activé : un code est envoyé par SMS et il est obligatoire pour se connecter ou s'inscrire
+                (les anciennes versions des apps, sans écran de code, sont invitées à se mettre à jour).
+                Désactivé : aucun SMS n'est envoyé, tout le monde se connecte et s'inscrit sans code.
+                À activer quand tout le monde a mis l'app à jour (montez aussi la « version minimale » ci-dessus).
               </small>
             </div>
             <Interrupteur actif={on('OTP_OBLIGATOIRE')} onChange={v => set('OTP_OBLIGATOIRE', v)} />
