@@ -336,6 +336,47 @@ export default function ControleApp({ mode = 'apps' }) {
       </div>
 
       <div className="nd-card" style={{ marginTop: 16 }}>
+        <div className="nd-card-header"><span className="nd-card-title">🔐 Code SMS à l'inscription et à la connexion</span></div>
+        <div className="nd-card-body">
+          <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 12 }}>
+            Les nouvelles versions des apps envoient un code à 6 chiffres par SMS (Orange, expéditeur « NuDemm ») :
+            valable 5 minutes, 5 essais au plus, un nouvel envoi toutes les 60 secondes au plus.
+          </small>
+          <div className="cp-ligne" style={{ marginBottom: 14 }}>
+            <div>
+              <b>Code SMS obligatoire</b>
+              <small className="nd-cell-sub">
+                Activé : impossible de se connecter ou de s'inscrire sans le code reçu par SMS.
+                Désactivé : les anciennes versions des apps (sans code) fonctionnent encore ; le code saisi dans les
+                nouvelles est quand même vérifié. À activer quand tout le monde a mis l'app à jour
+                (montez aussi la « version minimale » ci-dessus).
+              </small>
+            </div>
+            <Interrupteur actif={on('OTP_OBLIGATOIRE')} onChange={v => set('OTP_OBLIGATOIRE', v)} />
+          </div>
+          {on('OTP_OBLIGATOIRE') && config.OTP_OBLIGATOIRE !== 'true' && (
+            <div className="nd-alert nd-alert-warn" style={{ marginBottom: 12 }}>
+              ⚠ Les utilisateurs qui ont encore une ancienne version ne pourront plus se connecter tant qu'ils n'auront pas mis l'app à jour.
+            </div>
+          )}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+            <div className="nd-form-group">
+              <label>Numéros de démonstration</label>
+              <input className="nd-input" placeholder="772995725" value={form.OTP_DEMO_TELEPHONES ?? ''}
+                onChange={e => set('OTP_DEMO_TELEPHONES', e.target.value)} />
+              <small className="nd-cell-sub">Pour la relecture App Store / Play Store : aucun SMS, code fixe. Séparés par des virgules.</small>
+            </div>
+            <div className="nd-form-group">
+              <label>Code de démonstration</label>
+              <input className="nd-input" inputMode="numeric" maxLength={8} style={{ maxWidth: 160 }} value={form.OTP_DEMO_CODE ?? ''}
+                onChange={e => set('OTP_DEMO_CODE', e.target.value.replace(/\D/g, ''))} />
+              <small className="nd-cell-sub">4 à 8 chiffres, à donner aux relecteurs d'Apple et de Google. Vide = démo désactivée.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="nd-card" style={{ marginTop: 16 }}>
         <div className="nd-card-header"><span className="nd-card-title">Documents des chauffeurs</span></div>
 
         <div className="nd-card-body">
