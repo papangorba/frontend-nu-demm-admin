@@ -231,6 +231,7 @@ export const apiControle = {
   modifierTarif:   (code, d)  => put(`/api/admin/tarifs/${code}`, d),
   config:          ()         => get('/api/admin/config'),
   modifierConfig:  d          => put('/api/admin/config', d),
+  verifierStores:  ()         => post('/api/admin/versions/verifier'),
   documents:       (statut = 'EN_ATTENTE') => get(`/api/admin/documents?statut=${statut}`),
   documentsEnAttente: ()      => get('/api/admin/documents/compteur'),
   documentsChauffeur: id      => get(`/api/admin/documents/chauffeur/${id}`),

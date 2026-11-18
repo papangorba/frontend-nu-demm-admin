@@ -28,9 +28,16 @@ const PRIX = [
 ];
 
 const APPS = [
-  { id: 'CLIENT', icone: '📱', nom: 'App client', version: '1.0.3' },
-  { id: 'CHAUFFEUR', icone: '🚖', nom: 'App chauffeur', version: '1.0.2' },
+  { id: 'CLIENT', icone: '📱', nom: 'App client' },
+  { id: 'CHAUFFEUR', icone: '🚖', nom: 'App chauffeur' },
 ];
+
+/** « 2026-11-18T14:05:00 » → « 18/11 à 14:05 » */
+const quand = iso => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? iso : `${d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à ${d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+};
 
 /** mode « apps » (Contrôle des apps) ou « sessions » (Sessions & connexion, menu Utilisateurs) */
 export default function ControleApp({ mode = 'apps' }) {
@@ -48,6 +55,19 @@ export default function ControleApp({ mode = 'apps' }) {
   useEffect(() => { charger(); }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: String(v) }));
+  const [verification, setVerification] = useState(false);
+  /** Relit les stores sans toucher aux modifications pas encore enregistrées */
+  const verifierStores = async () => {
+    setVerification(true);
+    try {
+      const c = await apiControle.verifierStores();
+      const lues = Object.fromEntries(Object.entries(c).filter(([k]) => k.startsWith('VERSION_STORE_') || k === 'VERSIONS_VERIFIEES_LE'));
+      setConfig(x => ({ ...x, ...lues }));
+      setForm(f => ({ ...f, ...lues }));
+      toast('Versions des stores vérifiées', 'success');
+    } catch (e) { toast(e.message, 'error'); }
+    finally { setVerification(false); }
+  };
   const on = k => form[k] === 'true';
   const modifie = config && Object.keys(form).some(k => form[k] !== config[k]);
 
@@ -129,18 +149,75 @@ export default function ControleApp({ mode = 'apps' }) {
                   <label>Version minimale acceptée</label>
                   <input className="nd-input" placeholder="1.0.0" value={form[`VERSION_MIN_${a.id}`] || ''}
                     onChange={e => set(`VERSION_MIN_${a.id}`, e.target.value.trim())} />
-                  <small className="nd-cell-sub">Les versions plus anciennes doivent se mettre à jour (dernière version : {a.version})</small>
+                  <small className="nd-cell-sub">Les versions plus anciennes doivent se mettre à jour</small>
                 </div>
                 <div className="nd-form-group" style={{ marginTop: 14 }}>
-                  <label>Lien Play Store / App Store</label>
+                  <label>Version publiée sur les stores (détectée toute seule)</label>
+                  <div style={{ display: 'grid', gap: 4, fontSize: 13 }}>
+                    {[['IOS', '🍎 App Store'], ['ANDROID', '🤖 Play Store']].map(([p, nom]) => {
+                      const v = form[`VERSION_STORE_${a.id}_${p}`];
+                      return (
+                        <div key={p}>
+                          {nom} : <b>{v || 'pas encore publiée'}</b>
+                          {v && <span className="nd-cell-sub"> · parue le {quand(form[`VERSION_STORE_${a.id}_${p}_DEPUIS`])}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="cp-ligne" style={{ marginTop: 14 }}>
+                  <div>
+                    <b>Mise à jour obligatoire automatique</b>
+                    <small className="nd-cell-sub">
+                      Activé : chaque nouvelle version publiée sur un store devient la version minimale de ce store
+                      (après le délai réglé plus bas) ; avant le délai, l'app propose « Nouvelle version disponible ».
+                      Désactivé : l'app propose seulement la mise à jour (Mettre à jour / Plus tard).
+                    </small>
+                  </div>
+                  <Interrupteur actif={on(`MAJ_AUTO_${a.id}`)} onChange={v => set(`MAJ_AUTO_${a.id}`, v)} />
+                </div>
+                <div className="nd-form-group" style={{ marginTop: 14 }}>
+                  <label>Lien Play Store</label>
                   <input className="nd-input" placeholder="https://play.google.com/store/apps/details?id=..."
-                    value={form[`LIEN_STORE_${a.id}`] || ''} onChange={e => set(`LIEN_STORE_${a.id}`, e.target.value)} />
-                  <small className="nd-cell-sub">Ouvert par le bouton « Mettre à jour »</small>
+                    value={form[`LIEN_PLAY_${a.id}`] || ''} onChange={e => set(`LIEN_PLAY_${a.id}`, e.target.value.trim())} />
+                </div>
+                <div className="nd-form-group" style={{ marginTop: 10 }}>
+                  <label>Lien App Store</label>
+                  <input className="nd-input" placeholder="https://apps.apple.com/sn/app/id..."
+                    value={form[`LIEN_APPLE_${a.id}`] || ''} onChange={e => set(`LIEN_APPLE_${a.id}`, e.target.value.trim())} />
+                  <small className="nd-cell-sub">Le bouton « Mettre à jour » ouvre le store du téléphone (Android ou iPhone)</small>
                 </div>
               </div>
             </div>
           );
         })}
+      </div>
+
+      <div className="nd-card" style={{ marginTop: 16 }}>
+        <div className="nd-card-header">
+          <span className="nd-card-title">🔄 Mises à jour des apps</span>
+          <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={verification} onClick={verifierStores}>
+            {verification ? 'Vérification…' : 'Vérifier les stores maintenant'}
+          </button>
+        </div>
+        <div className="nd-card-body">
+          <small className="nd-cell-sub" style={{ display: 'block', marginBottom: 12 }}>
+            Le serveur lit toutes les 30 minutes la version visible par le public sur l'App Store et le Play Store
+            (les versions de test ne comptent pas). Dernière vérification : {quand(form.VERSIONS_VERIFIEES_LE) || 'jamais'}.
+          </small>
+          <div className="nd-form-group">
+            <label>Délai avant de rendre la mise à jour obligatoire</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input className="nd-input" type="number" min={0} max={168} style={{ maxWidth: 110 }} placeholder="24"
+                value={form.MAJ_AUTO_DELAI_HEURES ?? ''} onChange={e => set('MAJ_AUTO_DELAI_HEURES', e.target.value.trim())} />
+              <span className="nd-cell-sub">heures après la parution sur le store</span>
+            </div>
+            <small className="nd-cell-sub">
+              Laisse le temps au store de proposer la mise à jour à tout le monde (déploiement progressif sur Google Play).
+              Pendant ce délai, l'app affiche « Nouvelle version disponible ».
+            </small>
+          </div>
+        </div>
       </div>
 
       <div className="nd-card" style={{ marginTop: 16 }}>
