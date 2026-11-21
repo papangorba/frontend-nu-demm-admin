@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import { Spinner } from '../ui';
 import { BandeauSos } from '../../pages/AlertesSos';
 import { ThemeProvider, useAuth } from '../../context/AppContext';
 
@@ -27,7 +28,7 @@ export default function AppLayout() {
           <div className="nd-content">
             {/* Chaque page arrive floue puis devient nette, ses blocs l'un après l'autre (comme dans les apps) */}
             <div key={location.pathname} className="nd-apparition">
-              <Outlet />
+              <Suspense fallback={<Spinner center />}><Outlet /></Suspense>
             </div>
           </div>
         </div>

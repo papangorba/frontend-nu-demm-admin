@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiUsers, apiFiche, fmtDate, fmtDT, Audit } from '../services/api';
 import FicheUtilisateur, { BadgeInactivite, ilYa, joursInactif } from '../components/FicheUtilisateur';
-import { Avatar, Modal, EmptyRow, LoadingRow } from '../components/ui';
+import { Avatar, Modal, EmptyRow, LoadingRow, usePagination } from '../components/ui';
 import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 
@@ -40,6 +40,8 @@ export default function Clients() {
     const q = search.toLowerCase();
     return (!q || (c.name||'').toLowerCase().includes(q) || (c.telephone||'').includes(q) || (c.email||'').toLowerCase().includes(q)) && filtreActivite(c);
   });
+  // 50 lignes par page à l'écran ; la recherche et les filtres portent sur toute la liste
+  const { visibles: lignesPage, barre: barrePages } = usePagination(filtered);
 
   const openModal = (item=null) => {
     setEditId(item?.id||null); setErr('');
@@ -127,7 +129,7 @@ export default function Clients() {
               <thead><tr><th>#ID</th><th>Client</th><th>Téléphone</th><th>Email</th><th>Compte</th><th>Inscrit le</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
               <tbody>
                 {loading ? <LoadingRow cols={8}/> : !filtered.length ? <EmptyRow cols={8} msg="Aucun client trouvé"/> :
-                  filtered.map(c => (
+                  lignesPage.map(c => (
                     <tr key={c.id} style={{opacity: c.compteActif === false ? .6 : 1}}>
                       <td className="nd-table-id">#{c.id}</td>
                       <td><div className="nd-cell-user" style={{cursor:'pointer'}} onClick={()=>setFicheId(c.id)} title="Ouvrir la fiche"><Avatar name={c.name||'?'} size={32}/><div className="nd-cell-name">{c.name||'—'}</div></div></td>
@@ -154,6 +156,7 @@ export default function Clients() {
                 }
               </tbody>
             </table>
+            {barrePages}
           </div>
         </div>
       </div>

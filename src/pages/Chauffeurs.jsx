@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUsers, apiFiche, apiVehicules, serviceIcon, serviceDuVehicule, categorieService, fmtDate, fmtDT, Audit } from '../services/api';
 import FicheUtilisateur, { BadgeInactivite, ilYa, joursInactif } from '../components/FicheUtilisateur';
-import { Avatar, MiniCard, Modal, EmptyRow, LoadingRow } from '../components/ui';
+import { Avatar, MiniCard, Modal, EmptyRow, LoadingRow, usePagination } from '../components/ui';
 import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 
@@ -64,6 +64,8 @@ export default function Chauffeurs() {
     const mT = !filterType || (filterType === 'AUCUN' ? !c.vehicule : c.service===filterType);
     return mQ && mT && filtreActivite(c);
   });
+  // 50 lignes par page à l'écran ; la recherche et les filtres portent sur toute la liste
+  const { visibles: lignesPage, barre: barrePages } = usePagination(filtered);
 
   const openModal = (item=null) => {
     setEditId(item?.id||null);
@@ -187,7 +189,7 @@ export default function Chauffeurs() {
               <thead><tr><th>#ID</th><th>Chauffeur</th><th>Téléphone</th><th>Type Service</th><th>N° Permis</th><th>Exp. Permis</th><th>Compte</th><th>Inscrit le</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
               <tbody>
                 {loading ? <LoadingRow cols={10}/> : !filtered.length ? <EmptyRow cols={10} msg="Aucun chauffeur trouvé"/> :
-                  filtered.map(c => (
+                  lignesPage.map(c => (
                     <tr key={c.id} style={{opacity: c.compteActif === false ? .6 : 1}}>
                       <td className="nd-table-id">#{c.id}</td>
                       <td><div className="nd-cell-user" style={{cursor:'pointer'}} onClick={()=>setFicheId(c.id)} title="Ouvrir la fiche"><Avatar name={c.name||'?'} size={32}/><div><div className="nd-cell-name">{c.name||'—'}</div><small className="nd-cell-sub">{c.email||''}</small></div></div></td>
@@ -222,6 +224,7 @@ export default function Chauffeurs() {
                 }
               </tbody>
             </table>
+            {barrePages}
           </div>
         </div>
       </div>

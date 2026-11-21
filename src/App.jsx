@@ -1,33 +1,50 @@
+import { lazy as reactLazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, ToastProvider, useAuth } from './context/AppContext';
 import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Chauffeurs from './pages/Chauffeurs';
-import Clients from './pages/Clients';
-import Commandes from './pages/Commandes';
-import Supervision from './pages/Supervision';
-import Notifications from './pages/Notifications';
-import Publicites from './pages/Publicites';
-import Contenus from './pages/Contenus';
-import Tarifs from './pages/Tarifs';
-import Documents from './pages/Documents';
-import ControleApp from './pages/ControleApp';
-import AlertesSos from './pages/AlertesSos';
-import Suppressions from './pages/Suppressions';
-import ComptesPro from './pages/ComptesPro';
-import Regions from './pages/Regions';
-import WolofNdiaye from './pages/WolofNdiaye';
-import Entreprises from './pages/Entreprises';
-import MonEntreprise from './pages/MonEntreprise';
-import EntVehicules from './pages/entreprise/Vehicules';
-import EntChauffeurs from './pages/entreprise/Chauffeurs';
-import EntProfil from './pages/entreprise/Profil';
-import EntTrajets from './pages/entreprise/Trajets';
-import {
-  Livraisons, Trajets, Vehicules, Reservations,
-  Admins, AuditLog, Settings
-} from './pages/OtherPages';
+// Chaque page est téléchargée seulement quand on l'ouvre (l'admin démarre plus vite).
+// Après une mise en ligne, un onglet resté ouvert peut chercher un fichier de page qui n'existe plus :
+// on recharge l'admin une seule fois (sinon la page resterait blanche).
+const lazy = charger => reactLazy(() => charger().then(page => {
+  try { sessionStorage.removeItem('nd-recharge'); } catch { /* stockage bloqué */ }
+  return page;
+}).catch(erreur => {
+  let deja = false;
+  try { deja = sessionStorage.getItem('nd-recharge') === '1'; sessionStorage.setItem('nd-recharge', '1'); } catch { /* stockage bloqué */ }
+  if (!deja) { window.location.reload(); return new Promise(() => {}); }
+  throw erreur;
+}));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Chauffeurs = lazy(() => import('./pages/Chauffeurs'));
+const Clients = lazy(() => import('./pages/Clients'));
+const Commandes = lazy(() => import('./pages/Commandes'));
+const Supervision = lazy(() => import('./pages/Supervision'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Publicites = lazy(() => import('./pages/Publicites'));
+const Contenus = lazy(() => import('./pages/Contenus'));
+const Tarifs = lazy(() => import('./pages/Tarifs'));
+const Documents = lazy(() => import('./pages/Documents'));
+const ControleApp = lazy(() => import('./pages/ControleApp'));
+const AlertesSos = lazy(() => import('./pages/AlertesSos'));
+const Suppressions = lazy(() => import('./pages/Suppressions'));
+const ComptesPro = lazy(() => import('./pages/ComptesPro'));
+const Regions = lazy(() => import('./pages/Regions'));
+const WolofNdiaye = lazy(() => import('./pages/WolofNdiaye'));
+const Entreprises = lazy(() => import('./pages/Entreprises'));
+const MonEntreprise = lazy(() => import('./pages/MonEntreprise'));
+const EntVehicules = lazy(() => import('./pages/entreprise/Vehicules'));
+const EntChauffeurs = lazy(() => import('./pages/entreprise/Chauffeurs'));
+const EntProfil = lazy(() => import('./pages/entreprise/Profil'));
+const EntTrajets = lazy(() => import('./pages/entreprise/Trajets'));
+const autres = () => import('./pages/OtherPages');
+const Livraisons = lazy(() => autres().then(m => ({ default: m.Livraisons })));
+const Trajets = lazy(() => autres().then(m => ({ default: m.Trajets })));
+const Vehicules = lazy(() => autres().then(m => ({ default: m.Vehicules })));
+const Reservations = lazy(() => autres().then(m => ({ default: m.Reservations })));
+const Admins = lazy(() => autres().then(m => ({ default: m.Admins })));
+const AuditLog = lazy(() => autres().then(m => ({ default: m.AuditLog })));
+const Settings = lazy(() => autres().then(m => ({ default: m.Settings })));
 
 function PrivateRoute({ children }) {
   const { logged } = useAuth();

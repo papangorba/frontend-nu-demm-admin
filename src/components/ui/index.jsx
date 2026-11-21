@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { STATUS_MAP, ROLE_MAP, avatarColor } from '../../services/api';
 
 // ─── Status Badge ─────────────────────────────────────────────
@@ -112,4 +113,27 @@ export function DetailRow({ label, value }) {
       <span className="nd-detail-val">{value ?? '—'}</span>
     </div>
   );
+}
+
+
+// ─── Pagination de l'affichage (les données restent toutes en mémoire : la recherche couvre tout) ───
+export const PAR_PAGE = 50;
+
+/** Lignes de la page courante + barre « ‹ 1–50 sur 312 › ». Revient à la page 1 quand la liste change. */
+export function usePagination(lignes, parPage = PAR_PAGE) {
+  const [page, setPage] = useState(0);
+  const total = lignes.length;
+  const pages = Math.max(1, Math.ceil(total / parPage));
+  useEffect(() => { setPage(0); }, [total]);
+  const p = Math.min(page, pages - 1);
+  const visibles = lignes.slice(p * parPage, (p + 1) * parPage);
+  const barre = total <= parPage ? null : (
+    <div className="nd-pagination" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, padding: '10px 16px' }}>
+      <span className="nd-cell-sub">{p * parPage + 1}–{Math.min(total, (p + 1) * parPage)} sur {total}</span>
+      <button className="nd-btn nd-btn-ghost nd-btn-sm" disabled={p === 0} onClick={() => setPage(p - 1)} aria-label="Page précédente">‹ Précédent</button>
+      <span style={{ fontSize: 12, fontWeight: 600 }}>{p + 1} / {pages}</span>
+      <button className="nd-btn nd-btn-ghost nd-btn-sm" disabled={p >= pages - 1} onClick={() => setPage(p + 1)} aria-label="Page suivante">Suivant ›</button>
+    </div>
+  );
+  return { visibles, barre };
 }

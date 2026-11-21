@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { apiCommandes, fmtDT, Audit } from '../services/api';
-import { StatusBadge, MiniCard, Modal, EmptyRow, LoadingRow } from '../components/ui';
+import { StatusBadge, MiniCard, Modal, EmptyRow, LoadingRow, usePagination } from '../components/ui';
 import useAuChargement from '../hooks/useAuChargement';
 import { useToast } from '../context/AppContext';
 
@@ -31,6 +31,8 @@ export default function Commandes() {
     const mSv = !filterService || c.serviceType===filterService;
     return mQ && mS && mSv;
   });
+  // 50 lignes par page à l'écran ; la recherche et les filtres portent sur toute la liste
+  const { visibles: lignesPage, barre: barrePages } = usePagination(filtered);
 
   const changeStatus = async (id, status) => {
     try {
@@ -103,7 +105,7 @@ export default function Commandes() {
               <thead><tr><th>#</th><th>Départ</th><th>Destination</th><th>Client</th><th>Prix</th><th>Service</th><th>Statut</th><th>Date</th><th>Actions</th></tr></thead>
               <tbody>
                 {loading ? <LoadingRow cols={9}/> : !filtered.length ? <EmptyRow cols={9} msg="Aucune commande"/> :
-                  filtered.map(c => (
+                  lignesPage.map(c => (
                     <tr key={c.id}>
                       <td className="nd-table-id">#{c.id}</td>
                       <td style={{maxWidth:130,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}><small>{c.depart||'—'}</small></td>
@@ -131,6 +133,7 @@ export default function Commandes() {
                 }
               </tbody>
             </table>
+            {barrePages}
           </div>
         </div>
       </div>
