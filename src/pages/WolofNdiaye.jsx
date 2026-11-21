@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AudioLines, RefreshCw, Server, Smartphone, Car, Volume2, Activity, AlertTriangle, Timer, MessageSquare } from 'lucide-react';
+import { AudioLines, RefreshCw, Server, Smartphone, Car, Volume2, Activity, AlertTriangle, Timer, MessageSquare, Sparkles } from 'lucide-react';
 import { apiVoix, Audit } from '../services/api';
 import { Spinner, StatCard } from '../components/ui';
 import { useToast } from '../context/AppContext';
@@ -74,6 +74,10 @@ export default function WolofNdiaye() {
     { cle: 'VOIX_REPONSE_VOCALE', icone: <Volume2 size={18} />, libelle: 'Réponses dites à voix haute (wolof)',
       aide: r.voixAutorisee ? 'Voix Kiriku : la réponse est lue en plus d\'être affichée.'
         : 'Voix désactivée sur le serveur (VOICE_TTS_ACTIVE) : seules les réponses écrites s\'affichent.' },
+    { cle: 'VOIX_SECOURS_GEMINI', icone: <Sparkles size={18} />, libelle: 'Secours Gemini',
+      aide: r.geminiConfigure
+        ? 'Phrase pas comprise ou serveur vocal en panne : Gemini (Google) écoute à son tour. Les réponses et les actions restent celles de Ñu Demm.'
+        : 'Clé GEMINI_API_KEY absente sur Render : le secours ne peut pas fonctionner.' },
   ];
 
   return (
@@ -133,6 +137,7 @@ export default function WolofNdiaye() {
         <StatCard color="orange" icon={<Car />} value={st.chauffeur ?? 0} label="Depuis l'app chauffeur" />
         <StatCard color="red" icon={<AlertTriangle />} value={st.erreurs ?? 0} label="Erreurs" />
         <StatCard color="purple" icon={<Timer />} value={secondes(st.tempsMoyenMs)} label="Temps de réponse moyen" />
+        <StatCard color="blue" icon={<Sparkles />} value={st.secoursGemini ?? 0} label="Rattrapés par Gemini" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
