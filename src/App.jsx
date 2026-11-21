@@ -17,6 +17,7 @@ import AlertesSos from './pages/AlertesSos';
 import Suppressions from './pages/Suppressions';
 import ComptesPro from './pages/ComptesPro';
 import Regions from './pages/Regions';
+import WolofNdiaye from './pages/WolofNdiaye';
 import Entreprises from './pages/Entreprises';
 import MonEntreprise from './pages/MonEntreprise';
 import EntVehicules from './pages/entreprise/Vehicules';
@@ -60,6 +61,7 @@ function AppRoutes() {
         <Route path="suppressions"  element={<Suppressions />} />
         <Route path="comptes-pro"   element={<ComptesPro />} />
         <Route path="regions"       element={<Regions />} />
+        <Route path="wolof-ndiaye"  element={<WolofNdiaye />} />
         <Route path="publicites"    element={<Publicites />} />
         <Route path="contenus"      element={<Contenus />} />
         <Route path="tarifs"        element={<Tarifs />} />

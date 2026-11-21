@@ -334,6 +334,14 @@ export const apiRegions = {
   partout:  (service, actif)  => put('/api/admin/regions', { service, actif }),
 };
 
+// ─── Wolof Ndiaye (assistant vocal) ───────────────────────────
+export const apiVoix = {
+  etat:     ()  => get('/api/admin/voix'),
+  statut:   ()  => get('/api/admin/voix/statut'),
+  /** d : { VOIX_CLIENT_ACTIF?, VOIX_CHAUFFEUR_ACTIF?, VOIX_REPONSE_VOCALE? } */
+  modifier: d   => put('/api/admin/voix', d),
+};
+
 /** Pastilles du menu : nouveautés par module depuis la dernière visite ({ module: 'aaaa-mm-jjThh:mm:ss' }) */
 export const apiNouveautes = {
   compter: depuis => get(`/api/admin/nouveautes?${new URLSearchParams(depuis).toString()}`),

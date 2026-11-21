@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Radar, Car, IdCard, Users, ShoppingBag, Truck, Route, CarFront, CalendarDays,
   Bell, Megaphone, FileText, BadgeDollarSign, SlidersHorizontal, Clock, ShieldCheck, ScrollText, Settings,
-  Moon, Sun, LogOut, PanelLeftClose, PanelLeftOpen, Siren, Building2, Bus, Gauge, UserRound, MapPinned, UserX, Store,
+  Moon, Sun, LogOut, PanelLeftClose, PanelLeftOpen, Siren, Building2, Bus, Gauge, UserRound, MapPinned, UserX, Store, AudioLines,
 } from 'lucide-react';
 import { Auth } from '../../services/api';
 import { Avatar, RoleBadge } from '../ui';
@@ -14,7 +14,7 @@ import { useNouveautes } from './nouveautes';
 export const ICONES = {
   dashboard: LayoutDashboard, supervision: Radar, sos: Siren, entreprises: Building2, 'mon-entreprise': Gauge, 'ent-vehicules': Bus, 'ent-chauffeurs': UserRound, 'ent-profil': Building2, 'ent-trajets': MapPinned, chauffeurs: Car, documents: IdCard, clients: Users, 'comptes-pro': Store, suppressions: UserX,
   commandes: ShoppingBag, livraisons: Truck, trajets: Route, vehicules: CarFront, reservations: CalendarDays,
-  notifications: Bell, publicites: Megaphone, contenus: FileText, tarifs: BadgeDollarSign, controle: SlidersHorizontal, sessions: Clock, regions: MapPinned,
+  notifications: Bell, publicites: Megaphone, contenus: FileText, tarifs: BadgeDollarSign, controle: SlidersHorizontal, sessions: Clock, regions: MapPinned, 'wolof-ndiaye': AudioLines,
   admins: ShieldCheck, audit: ScrollText, settings: Settings,
 };
 
@@ -69,6 +69,7 @@ export const MENU_SECTIONS = [
       { id: 'tarifs',        label: 'Tarifs',          to: '/tarifs' },
       { id: 'controle',      label: 'Contrôle des apps', to: '/controle' },
       { id: 'regions',       label: 'Services par région', to: '/regions' },
+      { id: 'wolof-ndiaye',  label: 'Wolof Ndiaye',    to: '/wolof-ndiaye' },
       { id: 'admins',        label: 'Administrateurs', to: '/admins' },
       { id: 'audit',         label: "Journal d'audit", to: '/audit' },
       { id: 'settings',      label: 'Paramètres',      to: '/settings' },
