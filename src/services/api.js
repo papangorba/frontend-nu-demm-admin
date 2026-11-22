@@ -90,11 +90,11 @@ export const Auth = {
   },
   PERMS: {
     SUPER_ADMIN: ['*'],
-    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
-    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
-    ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','notifications','publicites','audit'],
+    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
+    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
+    ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','envois-colis','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
-    MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','notifications'],
+    MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','notifications'],
   },
   can(mod) {
     // L'espace « Mon entreprise » n'a de sens que pour le gérant d'une entreprise de transport
@@ -224,6 +224,12 @@ export const compresserImage = (file, maxW = 1280, qualite = 0.82) =>
     };
     reader.readAsDataURL(file);
   });
+
+// ─── Allô Sénégal : envois de colis ─────────────────────────
+export const apiEnvoisColis = {
+  liste:   ()           => get('/api/admin/envois-colis'),
+  annuler: (id, motif)  => put(`/api/admin/envois-colis/${id}/annuler`, { motif }),
+};
 
 // ─── Tarifs, contrôle des apps, documents chauffeurs ─────────
 export const apiControle = {

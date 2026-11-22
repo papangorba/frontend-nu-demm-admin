@@ -28,6 +28,7 @@ const Documents = lazy(() => import('./pages/Documents'));
 const ControleApp = lazy(() => import('./pages/ControleApp'));
 const AlertesSos = lazy(() => import('./pages/AlertesSos'));
 const Suppressions = lazy(() => import('./pages/Suppressions'));
+const EnvoisColis = lazy(() => import('./pages/EnvoisColis'));
 const ComptesPro = lazy(() => import('./pages/ComptesPro'));
 const Regions = lazy(() => import('./pages/Regions'));
 const WolofNdiaye = lazy(() => import('./pages/WolofNdiaye'));
@@ -76,6 +77,7 @@ function AppRoutes() {
         <Route path="supervision"   element={<Supervision />} />
         <Route path="sos"           element={<AlertesSos />} />
         <Route path="suppressions"  element={<Suppressions />} />
+        <Route path="envois-colis"  element={<EnvoisColis />} />
         <Route path="comptes-pro"   element={<ComptesPro />} />
         <Route path="regions"       element={<Regions />} />
         <Route path="wolof-ndiaye"  element={<WolofNdiaye />} />

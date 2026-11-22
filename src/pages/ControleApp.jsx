@@ -436,6 +436,16 @@ export default function ControleApp({ mode = 'apps' }) {
               ⚠ Les utilisateurs qui ont encore une ancienne version ne pourront plus se connecter tant qu'ils n'auront pas mis l'app à jour.
             </div>
           )}
+          <div className="cp-ligne" style={{ marginBottom: 14 }}>
+            <div>
+              <b>SMS au destinataire d'un colis (Allô Sénégal)</b>
+              <small className="nd-cell-sub">
+                Quand le chauffeur accepte un colis, le destinataire reçoit par SMS le trajet et le code de retrait
+                à donner au chauffeur (1 SMS par colis accepté). Fonctionne même si le code SMS de connexion est désactivé.
+              </small>
+            </div>
+            <Interrupteur actif={on('COLIS_SMS_DESTINATAIRE')} onChange={v => set('COLIS_SMS_DESTINATAIRE', v)} />
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
             <div className="nd-form-group">
               <label>Numéros de démonstration</label>
