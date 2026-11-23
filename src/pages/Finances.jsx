@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, AlertTriangle } from 'lucide-react';
+import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, AlertTriangle, Trophy, Gift, PiggyBank } from 'lucide-react';
 import { apiFinances, apiRegions, Audit, Auth, fmtDT } from '../services/api';
 import { Spinner } from '../components/ui';
 import { useToast } from '../context/AppContext';
@@ -14,8 +14,14 @@ import { useToast } from '../context/AppContext';
 const fcfa = n => `${Number(n || 0).toLocaleString('fr-FR')} F`;
 const joli = t => (t || '').replace(/(\d{2})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
 const MOYENS = { WAVE: 'Wave', ORANGE_MONEY: 'Orange Money', ESPECES: 'Espèces (agence)' };
-const ACTIONS = { REGLAGES: 'Réglages', RECHARGE_CONFIRMEE: 'Recharge confirmée', RECHARGE_REFUSEE: 'Recharge refusée', AJUSTEMENT: 'Ajustement' };
-const TYPES = { COMMISSION: 'Commissions', RECHARGE: 'Recharges / règlements', AJUSTEMENT: 'Ajustements' };
+const ACTIONS = {
+  REGLAGES: 'Réglages', RECHARGE_CONFIRMEE: 'Recharge confirmée', RECHARGE_REFUSEE: 'Recharge refusée', AJUSTEMENT: 'Ajustement',
+  BUDGET_ALERTE: '⚠️ Alerte budget', DEFIS_CLOTURE: 'Clôture des défis', DEFI_EXCLU: 'Défi : chauffeur exclu',
+  DEFI_SANS_BUDGET: 'Défi : budget épuisé', CREDIT_SANS_BUDGET: 'Crédit : budget épuisé',
+  PARRAINAGE_SUSPECT: 'Parrainage suspect', PARRAINAGE_PLAFOND: 'Parrainage : plafond atteint',
+};
+const TYPES = { COMMISSION: 'Commissions', RECHARGE: 'Recharges / règlements', AJUSTEMENT: 'Ajustements', BONUS: 'Bonus des défis', REMISE_CLIENT: 'Crédits clients remboursés' };
+const ENVELOPPES = { BONUS: 'Bonus chauffeurs (défis)', FIDELITE: 'Fidélité clients', PARRAINAGE: 'Parrainage', RESERVE: 'Réserve' };
 
 function Interrupteur({ actif, onChange }) {
   return (
@@ -40,12 +46,14 @@ export default function Finances() {
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(null);
   const [fiche, setFiche] = useState(null);
+  const [reco, setReco] = useState(null);
   const [recherche, setRecherche] = useState('');
 
   const charger = async () => {
     try {
-      const v = await apiFinances.vue();
+      const [v, r] = await Promise.all([apiFinances.vue(), apiFinances.recompenses().catch(() => null)]);
       setD(v);
+      setReco(r);
       setForm({ ...v.reglages });
     } catch (e) { toast(e.message, 'error'); }
   };
@@ -93,6 +101,18 @@ export default function Finances() {
       await apiFinances.refuser(r.id, motif);
       Audit.log('FINANCES_RECHARGE_REFUS', `${r.nom} réf. ${r.referenceTransaction} : ${motif}`);
       toast('Recharge refusée : le chauffeur est prévenu', 'success');
+      await charger();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { setBusy(null); }
+  };
+
+  const cloturer = async () => {
+    if (!window.confirm('Clôturer les défis de la semaine dernière ?\nChaque chauffeur reçoit le bonus du palier le plus haut atteint, si le budget le permet. Une semaine déjà clôturée n\'est jamais payée deux fois.')) return;
+    setBusy('cloture');
+    try {
+      const r = await apiFinances.cloturer();
+      Audit.log('FINANCES_DEFIS', `Semaine ${r.semaine} : ${r.payes} versé(s)`);
+      toast(`Semaine ${r.semaine} : ${r.payes || 0} bonus versé(s) (${fcfa(r.total)})${r.sansBudget ? `, ${r.sansBudget} sans budget` : ''}`, 'success');
       await charger();
     } catch (e) { toast(e.message, 'error'); }
     finally { setBusy(null); }
@@ -204,6 +224,52 @@ export default function Finances() {
             ))}
           </div>
 
+          <hr style={{ border: 'none', borderTop: '1px solid var(--nd-border, #e5e7eb)', margin: 0 }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+            {[
+              ['ECO_COMMISSION_COVOITURAGE', 'Commission sur le covoiturage', 'Réservations Taxi-Bokko et Allô Sénégal des particuliers (pas les compagnies)'],
+              ['ECO_COMMISSION_COLIS', 'Commission sur les colis', "Envois de colis d'Allô Sénégal remis au destinataire"],
+            ].map(([k, l, aide]) => (
+              <div key={k} className="cp-ligne">
+                <div><b>{l}</b><small className="nd-cell-sub">{aide}</small></div>
+                <Interrupteur actif={form[k] === 'true'} onChange={v => habilite && set(k, v)} />
+              </div>
+            ))}
+          </div>
+
+          {[
+            ['ECO_DEFIS_ACTIF', <><Trophy size={15} /> Défis hebdomadaires des chauffeurs</>, 'Le palier le plus haut atteint (non cumulable), versé sur le solde le lundi',
+              [['ECO_DEFIS_PALIERS', 'Paliers « courses:bonus »', 'ex. 20:1000,35:2500,50:4000'], ['ECO_BUDGET_BONUS', 'Budget mensuel (F)', '']]],
+            ['ECO_FIDELITE_ACTIF', <><Gift size={15} /> Fidélité des clients (crédits)</>, 'Crédit à chaque palier de courses du mois, déduit automatiquement de la course suivante',
+              [['ECO_FIDELITE_PALIERS', 'Paliers « courses:crédit »', 'ex. 5:300,10:500'], ['ECO_CREDIT_JOURS', 'Validité (jours)', ''],
+               ['ECO_CREDIT_PLAFOND_POURCENT', 'Part max d\'une course (%)', ''], ['ECO_BUDGET_FIDELITE', 'Budget mensuel (F)', '']]],
+            ['ECO_PARRAINAGE_ACTIF', <><Gift size={15} /> Parrainage</>, 'Crédit au parrain et au filleul après les premières courses du filleul (anti-fraude : même téléphone refusé)',
+              [['ECO_PARRAINAGE_COURSES', 'Courses du filleul', ''], ['ECO_PARRAINAGE_MONTANT', 'Crédit à chacun (F)', ''],
+               ['ECO_PARRAINAGE_MAX_MOIS', 'Filleuls récompensés / parrain / mois', ''], ['ECO_BUDGET_PARRAINAGE', 'Budget mensuel (F)', '']]],
+          ].map(([k, titre, aide, champs]) => (
+            <div key={k} style={{ display: 'grid', gap: 10 }}>
+              <div className="cp-ligne">
+                <div><b style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{titre}</b><small className="nd-cell-sub">{aide}</small></div>
+                <Interrupteur actif={form[k] === 'true'} onChange={v => habilite && set(k, v)} />
+              </div>
+              {form[k] === 'true' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+                  {champs.map(([c, l, a]) => (
+                    <div key={c} className="nd-form-group">
+                      <label>{l}</label>
+                      <input className="nd-input" value={form[c] ?? ''} disabled={!habilite} onChange={e => set(c, e.target.value)} />
+                      {a && <small className="nd-cell-sub">{a}</small>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          <div className="nd-form-group" style={{ maxWidth: 260 }}>
+            <label>Réserve (budget mensuel, F)</label>
+            <input className="nd-input" value={form.ECO_BUDGET_RESERVE ?? ''} disabled={!habilite} onChange={e => set('ECO_BUDGET_RESERVE', e.target.value)} />
+          </div>
+
           {habilite ? (
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="nd-btn nd-btn-primary" disabled={!modifie || busy === 'reglages'} onClick={enregistrer}>
@@ -213,6 +279,51 @@ export default function Finances() {
           ) : <small className="nd-cell-sub">Lecture seule : seuls le super-administrateur et l'administrateur peuvent modifier.</small>}
         </div>
       </div>
+
+      {/* ─── Budget du mois ─── */}
+      {reco?.budgets && (
+        <div className="nd-card" style={{ marginBottom: 16 }}>
+          <div className="nd-card-header"><h3><PiggyBank size={16} /> Budget des récompenses ce mois-ci</h3></div>
+          <div className="nd-card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+            {reco.budgets.map(b => {
+              const couleur = b.pourcent >= 100 ? '#ef4444' : b.pourcent >= 80 ? '#f59e0b' : '#16a34a';
+              return (
+                <div key={b.enveloppe}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>{ENVELOPPES[b.enveloppe]}</b><span style={{ color: couleur, fontWeight: 700 }}>{b.pourcent} %</span></div>
+                  <div style={{ height: 8, borderRadius: 8, background: 'var(--nd-surface3)', margin: '6px 0', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, b.pourcent)}%`, height: '100%', background: couleur }} />
+                  </div>
+                  <small className="nd-cell-sub">{fcfa(b.depense)} sur {fcfa(b.budget)} · reste {fcfa(b.restant)}</small>
+                </div>
+              );
+            })}
+          </div>
+          <div className="nd-card-body nd-cell-sub" style={{ paddingTop: 0, fontSize: 12 }}>
+            Une récompense qui dépasserait son enveloppe n'est jamais créée (contrôle du serveur). Alertes dans le journal à 80, 90 et 100 %.
+          </div>
+        </div>
+      )}
+
+      {/* ─── Défis de la semaine ─── */}
+      {reco?.defis && form.ECO_DEFIS_ACTIF === 'true' && (
+        <div className="nd-card" style={{ marginBottom: 16 }}>
+          <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h3><Trophy size={16} /> Défis · semaine {reco.defis.semaine} · {fcfa(reco.defis.bonusEngage)} déjà atteints</h3>
+            {habilite && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'cloture'} onClick={cloturer}>Clôturer la semaine dernière</button>}
+          </div>
+          {(reco.defis.chauffeurs || []).length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune course terminée cette semaine dans les régions pilotes.</div> : (
+            <div className="nd-table-wrap"><table className="nd-table">
+              <thead><tr><th>Chauffeur</th><th>Courses</th><th>Palier atteint</th></tr></thead>
+              <tbody>
+                {reco.defis.chauffeurs.map(c => (
+                  <tr key={c.id}><td>{c.nom}</td><td><b>{c.courses}</b></td><td>{c.bonus ? fcfa(c.bonus) : '—'}</td></tr>
+                ))}
+              </tbody>
+            </table></div>
+          )}
+          <div className="nd-card-body nd-cell-sub" style={{ fontSize: 12 }}>Versement automatique chaque lundi à 1 h (heure de Dakar) sur le solde des chauffeurs.</div>
+        </div>
+      )}
 
       {/* ─── Recharges à confirmer ─── */}
       <div className="nd-card" style={{ marginBottom: 16 }}>

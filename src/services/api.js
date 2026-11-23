@@ -233,6 +233,8 @@ export const apiFinances = {
   confirmer: id                     => put(`/api/admin/finances/recharges/${id}/confirmer`, {}),
   refuser:   (id, motif)            => put(`/api/admin/finances/recharges/${id}/refuser`, { motif }),
   ajuster:   (id, montant, motif)   => post(`/api/admin/finances/chauffeurs/${id}/ajustement`, { montant, motif }),
+  recompenses: ()                   => get('/api/admin/finances/recompenses'),
+  cloturer:  lundi                  => post('/api/admin/finances/defis/cloturer', lundi ? { lundi } : {}),
 };
 
 // ─── Allô Sénégal : envois de colis ─────────────────────────
