@@ -90,11 +90,11 @@ export const Auth = {
   },
   PERMS: {
     SUPER_ADMIN: ['*'],
-    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
-    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
-    ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','envois-colis','notifications','publicites','audit'],
+    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
+    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
+    ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','envois-colis','litiges','rapports-finance','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
-    MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','notifications'],
+    MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','litiges','notifications'],
   },
   can(mod) {
     // L'espace « Mon entreprise » n'a de sens que pour le gérant d'une entreprise de transport
@@ -235,6 +235,25 @@ export const apiFinances = {
   ajuster:   (id, montant, motif)   => post(`/api/admin/finances/chauffeurs/${id}/ajustement`, { montant, motif }),
   recompenses: ()                   => get('/api/admin/finances/recompenses'),
   cloturer:  lundi                  => post('/api/admin/finances/defis/cloturer', lundi ? { lundi } : {}),
+};
+
+// ─── Litiges / remboursements et rapports financiers ────────
+export const apiLitiges = {
+  liste:     ()            => get('/api/admin/finances/litiges'),
+  ouvrir:    corps         => post('/api/admin/finances/litiges', corps),
+  decider:   (id, corps)   => put(`/api/admin/finances/litiges/${id}/decider`, corps),
+  approuver: id            => put(`/api/admin/finances/litiges/${id}/approuver`, {}),
+  refuser:   (id, motif)   => put(`/api/admin/finances/litiges/${id}/refuser`, { motif }),
+};
+export const apiRapports = {
+  rapport: (debut, fin) => get(`/api/admin/finances/rapport?debut=${debut}&fin=${fin}`),
+  /** Fichier CSV (écritures ou crédits) : adresse locale à télécharger */
+  async exporter(quoi, debut, fin) {
+    const r = await fetch(`${getBase()}/api/admin/finances/export?quoi=${quoi}&debut=${debut}&fin=${fin}`,
+      { headers: { Authorization: `Bearer ${Auth.token()}` } });
+    if (!r.ok) throw new Error(`Export impossible (HTTP ${r.status})`);
+    return URL.createObjectURL(await r.blob());
+  },
 };
 
 // ─── Allô Sénégal : envois de colis ─────────────────────────

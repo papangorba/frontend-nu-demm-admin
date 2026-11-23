@@ -30,6 +30,8 @@ const AlertesSos = lazy(() => import('./pages/AlertesSos'));
 const Suppressions = lazy(() => import('./pages/Suppressions'));
 const EnvoisColis = lazy(() => import('./pages/EnvoisColis'));
 const Finances = lazy(() => import('./pages/Finances'));
+const Litiges = lazy(() => import('./pages/Litiges'));
+const RapportsFinance = lazy(() => import('./pages/RapportsFinance'));
 const ComptesPro = lazy(() => import('./pages/ComptesPro'));
 const Regions = lazy(() => import('./pages/Regions'));
 const WolofNdiaye = lazy(() => import('./pages/WolofNdiaye'));
@@ -80,6 +82,8 @@ function AppRoutes() {
         <Route path="suppressions"  element={<Suppressions />} />
         <Route path="envois-colis"  element={<EnvoisColis />} />
         <Route path="finances"      element={<Finances />} />
+        <Route path="litiges"       element={<Litiges />} />
+        <Route path="rapports-finance" element={<RapportsFinance />} />
         <Route path="comptes-pro"   element={<ComptesPro />} />
         <Route path="regions"       element={<Regions />} />
         <Route path="wolof-ndiaye"  element={<WolofNdiaye />} />

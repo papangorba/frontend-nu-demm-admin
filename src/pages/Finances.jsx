@@ -19,8 +19,9 @@ const ACTIONS = {
   BUDGET_ALERTE: '⚠️ Alerte budget', DEFIS_CLOTURE: 'Clôture des défis', DEFI_EXCLU: 'Défi : chauffeur exclu',
   DEFI_SANS_BUDGET: 'Défi : budget épuisé', CREDIT_SANS_BUDGET: 'Crédit : budget épuisé',
   PARRAINAGE_SUSPECT: 'Parrainage suspect', PARRAINAGE_PLAFOND: 'Parrainage : plafond atteint',
+  LITIGE_OUVERT: 'Litige ouvert', LITIGE_A_APPROUVER: 'Litige : approbation demandée', LITIGE_ACCEPTE: 'Litige accepté', LITIGE_REFUSE: 'Litige refusé',
 };
-const TYPES = { COMMISSION: 'Commissions', RECHARGE: 'Recharges / règlements', AJUSTEMENT: 'Ajustements', BONUS: 'Bonus des défis', REMISE_CLIENT: 'Crédits clients remboursés' };
+const TYPES = { COMMISSION: 'Commissions', RECHARGE: 'Recharges / règlements', AJUSTEMENT: 'Ajustements', BONUS: 'Bonus des défis', REMISE_CLIENT: 'Crédits clients remboursés', ANNULATION_COMMISSION: 'Commissions rendues', RETENUE: 'Retenues' };
 const ENVELOPPES = { BONUS: 'Bonus chauffeurs (défis)', FIDELITE: 'Fidélité clients', PARRAINAGE: 'Parrainage', RESERVE: 'Réserve' };
 
 function Interrupteur({ actif, onChange }) {

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Radar, Car, IdCard, Users, ShoppingBag, Truck, Route, CarFront, CalendarDays,
   Bell, Megaphone, FileText, BadgeDollarSign, SlidersHorizontal, Clock, ShieldCheck, ScrollText, Settings,
-  Moon, Sun, LogOut, PanelLeftClose, PanelLeftOpen, Siren, Building2, Bus, Gauge, UserRound, MapPinned, UserX, Store, AudioLines, Package, Wallet,
+  Moon, Sun, LogOut, PanelLeftClose, PanelLeftOpen, Siren, Building2, Bus, Gauge, UserRound, MapPinned, UserX, Store, AudioLines, Package, Wallet, Scale, FileBarChart,
 } from 'lucide-react';
 import { Auth } from '../../services/api';
 import { Avatar, RoleBadge } from '../ui';
@@ -13,7 +13,7 @@ import { useNouveautes } from './nouveautes';
 /** Icônes du menu (lignes fines, comme les apps professionnelles). */
 export const ICONES = {
   dashboard: LayoutDashboard, supervision: Radar, sos: Siren, entreprises: Building2, 'mon-entreprise': Gauge, 'ent-vehicules': Bus, 'ent-chauffeurs': UserRound, 'ent-profil': Building2, 'ent-trajets': MapPinned, chauffeurs: Car, documents: IdCard, clients: Users, 'comptes-pro': Store, suppressions: UserX,
-  commandes: ShoppingBag, livraisons: Truck, 'envois-colis': Package, finances: Wallet, trajets: Route, vehicules: CarFront, reservations: CalendarDays,
+  commandes: ShoppingBag, livraisons: Truck, 'envois-colis': Package, finances: Wallet, litiges: Scale, 'rapports-finance': FileBarChart, trajets: Route, vehicules: CarFront, reservations: CalendarDays,
   notifications: Bell, publicites: Megaphone, contenus: FileText, tarifs: BadgeDollarSign, controle: SlidersHorizontal, sessions: Clock, regions: MapPinned, 'wolof-ndiaye': AudioLines,
   admins: ShieldCheck, audit: ScrollText, settings: Settings,
 };
@@ -56,6 +56,8 @@ export const MENU_SECTIONS = [
       { id: 'livraisons',   label: 'Livraisons',      to: '/livraisons' },
       { id: 'envois-colis', label: 'Envois de colis', to: '/envois-colis' },
       { id: 'finances',     label: 'Finances',        to: '/finances' },
+      { id: 'litiges',      label: 'Litiges & remboursements', to: '/litiges' },
+      { id: 'rapports-finance', label: 'Rapports financiers', to: '/rapports-finance' },
       { id: 'trajets',      label: 'Trajets',         to: '/trajets' },
       { id: 'vehicules',    label: 'Véhicules',       to: '/vehicules' },
       { id: 'reservations', label: 'Réservations',    to: '/reservations' },
