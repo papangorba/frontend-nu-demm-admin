@@ -57,6 +57,15 @@ export default function PaiementsEnLigne() {
     setBusy('');
   };
 
+  const enregistrerTesteurs = async () => {
+    const v = window.prompt('Numéros testeurs (9 chiffres, séparés par des virgules) :', cfg.MODE_TEST_TELEPHONES || '');
+    if (v === null) return;
+    setBusy('MODE_TEST_TELEPHONES');
+    try { await apiControle.modifierConfig({ MODE_TEST_TELEPHONES: v }); await charger(); toast('Testeurs enregistrés', 'success'); }
+    catch (e) { toast(e.message, 'error'); }
+    setBusy('');
+  };
+
   if (!d || !cfg) return null;
   const actif = cfg.PAIEMENT_EN_LIGNE === 'true';
   const m = d.moyens || {};
@@ -83,6 +92,22 @@ export default function PaiementsEnLigne() {
             </label>
           ))}
           <span className="nd-cell-sub">Proposés aux clients : {(m.moyens || []).map(x => x === 'WAVE' ? 'Wave' : 'Orange Money').join(', ') || 'aucun'}</span>
+        </div>
+        {/* Mode test : tout le parcours (paiement simulé, commissions, solde, recharges) pour quelques numéros seulement */}
+        <div style={{ background: '#FFF4E5', borderRadius: 10, padding: 12, marginBottom: 14 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+            <input type="checkbox" checked={cfg.MODE_TEST_ACTIF === 'true'} disabled={!regles || busy === 'MODE_TEST_ACTIF'}
+              onChange={e => basculer('MODE_TEST_ACTIF', e.target.checked)} />
+            🧪 Mode test (en attendant les API Wave / Orange Money)
+          </label>
+          <p className="nd-cell-sub" style={{ margin: '6px 0' }}>
+            Pour les numéros testeurs seulement : paiement simulé (aucun argent réel), commissions prélevées, Mon solde et recharges ouverts,
+            dans toutes les régions. Les autres clients et chauffeurs ne voient aucun changement. Pour une entreprise, mettez le numéro de l'entreprise.
+          </p>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span>Testeurs : <b>{cfg.MODE_TEST_TELEPHONES || 'aucun'}</b></span>
+            {regles && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'MODE_TEST_TELEPHONES'} onClick={enregistrerTesteurs}>Modifier</button>}
+          </div>
         </div>
         {liste.length === 0 ? <p className="nd-cell-sub">Aucun paiement en ligne pour le moment.</p> : (
           <div className="nd-table-wrap"><table className="nd-table">
