@@ -90,8 +90,8 @@ export const Auth = {
   },
   PERMS: {
     SUPER_ADMIN: ['*'],
-    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
-    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
+    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
+    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
     ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','envois-colis','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
     MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','notifications'],
@@ -224,6 +224,16 @@ export const compresserImage = (file, maxW = 1280, qualite = 0.82) =>
     };
     reader.readAsDataURL(file);
   });
+
+// ─── Modèle économique (phase pilote) ───────────────────────
+export const apiFinances = {
+  vue:       ()                     => get('/api/admin/finances'),
+  chauffeur: id                     => get(`/api/admin/finances/chauffeurs/${id}`),
+  reglages:  (valeurs, motif)       => put('/api/admin/finances/reglages', { valeurs, motif }),
+  confirmer: id                     => put(`/api/admin/finances/recharges/${id}/confirmer`, {}),
+  refuser:   (id, motif)            => put(`/api/admin/finances/recharges/${id}/refuser`, { motif }),
+  ajuster:   (id, montant, motif)   => post(`/api/admin/finances/chauffeurs/${id}/ajustement`, { montant, motif }),
+};
 
 // ─── Allô Sénégal : envois de colis ─────────────────────────
 export const apiEnvoisColis = {
