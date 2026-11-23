@@ -248,6 +248,13 @@ export const apiFinances = {
   cloturer:  lundi                  => post('/api/admin/finances/defis/cloturer', lundi ? { lundi } : {}),
 };
 
+// ─── Paiements Wave / Orange Money faits dans les apps ──────
+export const apiPaiements = {
+  liste:       ()               => get('/api/admin/finances/paiements'),
+  verser:      ref              => post(`/api/admin/finances/paiements/${ref}/verser`, {}),
+  marquerVerse:(ref, reference) => put(`/api/admin/finances/paiements/${ref}/verse`, { reference }),
+};
+
 // ─── Litiges / remboursements et rapports financiers ────────
 export const apiLitiges = {
   liste:     ()            => get('/api/admin/finances/litiges'),
@@ -338,6 +345,9 @@ export const apiEntreprises = {
 
 /** Espace du gérant d'une entreprise (ne voit que la sienne). */
 export const apiMonEntreprise = {
+  moyensPaiement:    ()        => get('/api/public/paiements/moyens'),
+  payerAbonnement:   (mois, moyen) => post('/api/flotte/abonnement/paiement', { mois, moyen }),
+  statutPaiement:    ref       => get(`/api/flotte/abonnement/paiement/${ref}`),
   moi:               ()        => get('/api/flotte/moi'),
   tableauDeBord:     ()        => get('/api/flotte/tableau-de-bord'),
   vehicules:         ()        => get('/api/flotte/vehicules'),

@@ -4,6 +4,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { apiMonEntreprise, fmtDate, fmtDT, money, mediaUrl } from '../services/api';
 import { Spinner } from '../components/ui';
 import { Tuile, GraphiqueRecettes } from './entreprise/Commun';
+import PayerAbonnement from '../components/PayerAbonnement';
 
 /**
  * Tableau de bord du gérant d'une entreprise de transport (SaaS, partie 3c).
@@ -39,13 +40,15 @@ export default function MonEntreprise() {
       {!e.abonnementValide ? (
         <div className="ent-alerte ent-alerte-forte"><AlertTriangle size={18} />
           Votre abonnement est terminé depuis le {fmtDate(e.abonnementJusquau)}. Vos trajets ne sont plus proposés aux clients
-          et vous ne pouvez plus modifier votre flotte : contactez l'équipe Ñu Demm pour le renouveler.
+          et vous ne pouvez plus modifier votre flotte : renouvelez-le ci-dessous en ligne, ou auprès de l'équipe Ñu Demm.
         </div>
       ) : e.aRenouveler ? (
         <div className="ent-alerte"><AlertTriangle size={18} />
           Votre abonnement se termine dans {e.joursRestants} jour(s), le {fmtDate(e.abonnementJusquau)}. Pensez à le renouveler auprès de l'équipe Ñu Demm.
         </div>
       ) : null}
+
+      <PayerAbonnement prixMensuel={e.prixMensuel} onPaye={charger} />
 
       <div className="ee-tuiles">
         <Tuile label="Recette du mois" value={money(d.recetteMois)}

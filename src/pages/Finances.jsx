@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, AlertTriangle, Trophy, Gift, PiggyBank } from 'lucide-react';
 import { apiFinances, apiRegions, Audit, Auth, fmtDT } from '../services/api';
 import { Spinner } from '../components/ui';
+import PaiementsEnLigne from '../components/PaiementsEnLigne';
 import { useToast } from '../context/AppContext';
 
 /**
@@ -305,6 +306,9 @@ export default function Finances() {
           </div>
         </div>
       )}
+
+      {/* ─── Paiements Wave / Orange Money des apps ─── */}
+      <PaiementsEnLigne />
 
       {/* ─── Défis de la semaine ─── */}
       {reco?.defis && form.ECO_DEFIS_ACTIF === 'true' && (
