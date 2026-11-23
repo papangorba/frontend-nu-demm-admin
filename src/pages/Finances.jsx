@@ -41,7 +41,8 @@ function demanderMotif(question) {
 
 export default function Finances() {
   const toast = useToast();
-  const habilite = ['SUPER_ADMIN', 'ADMIN'].includes(Auth.role());
+  const habilite = Auth.argent();   // recharges, ajustements, défis : super-admin, admin, finance
+  const regles = Auth.regles();     // règles du modèle : super-admin, admin
   const [d, setD] = useState(null);
   const [regions, setRegions] = useState([]);
   const [form, setForm] = useState(null);
@@ -182,7 +183,7 @@ export default function Finances() {
               <b>Modèle économique activé</b>
               <small className="nd-cell-sub">Coupé : aucune commission, aucun chauffeur bloqué. Les écritures déjà faites restent.</small>
             </div>
-            <Interrupteur actif={actif} onChange={v => habilite && set('ECO_ACTIF', v)} />
+            <Interrupteur actif={actif} onChange={v => regles && set('ECO_ACTIF', v)} />
           </div>
 
           <div>
@@ -190,7 +191,7 @@ export default function Finances() {
             <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
               {[['PREPAYE', 'Solde prépayé', 'Le chauffeur recharge ; la commission est retirée de son solde'],
                 ['DETTE', 'Commissions à régler', 'La commission s\'ajoute à ce qu\'il doit ; il règle ensuite']].map(([k, l, aide]) => (
-                <button key={k} type="button" disabled={!habilite} onClick={() => set('ECO_MODE', k)}
+                <button key={k} type="button" disabled={!regles} onClick={() => set('ECO_MODE', k)}
                   className={`nd-btn ${form.ECO_MODE === k ? 'nd-btn-primary' : 'nd-btn-outline'}`} title={aide}>{l}</button>
               ))}
             </div>
@@ -202,7 +203,7 @@ export default function Finances() {
             <b>Régions pilotes</b> <small className="nd-cell-sub">la commission ne s'applique qu'aux courses qui partent de ces régions</small>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
               {regions.map(r => (
-                <button key={r.code} type="button" disabled={!habilite} onClick={() => basculerRegion(r.code)}
+                <button key={r.code} type="button" disabled={!regles} onClick={() => basculerRegion(r.code)}
                   className={`nd-btn nd-btn-sm ${pilotes.includes(r.code) ? 'nd-btn-primary' : 'nd-btn-outline'}`}>{r.nom}</button>
               ))}
             </div>
@@ -219,7 +220,7 @@ export default function Finances() {
             ].map(([k, l, aide]) => (
               <div key={k} className="nd-form-group">
                 <label>{l}</label>
-                <input className="nd-input" value={form[k] ?? ''} disabled={!habilite} onChange={e => set(k, e.target.value)} />
+                <input className="nd-input" value={form[k] ?? ''} disabled={!regles} onChange={e => set(k, e.target.value)} />
                 {aide && <small className="nd-cell-sub">{aide}</small>}
               </div>
             ))}
@@ -233,7 +234,7 @@ export default function Finances() {
             ].map(([k, l, aide]) => (
               <div key={k} className="cp-ligne">
                 <div><b>{l}</b><small className="nd-cell-sub">{aide}</small></div>
-                <Interrupteur actif={form[k] === 'true'} onChange={v => habilite && set(k, v)} />
+                <Interrupteur actif={form[k] === 'true'} onChange={v => regles && set(k, v)} />
               </div>
             ))}
           </div>
@@ -251,14 +252,14 @@ export default function Finances() {
             <div key={k} style={{ display: 'grid', gap: 10 }}>
               <div className="cp-ligne">
                 <div><b style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{titre}</b><small className="nd-cell-sub">{aide}</small></div>
-                <Interrupteur actif={form[k] === 'true'} onChange={v => habilite && set(k, v)} />
+                <Interrupteur actif={form[k] === 'true'} onChange={v => regles && set(k, v)} />
               </div>
               {form[k] === 'true' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
                   {champs.map(([c, l, a]) => (
                     <div key={c} className="nd-form-group">
                       <label>{l}</label>
-                      <input className="nd-input" value={form[c] ?? ''} disabled={!habilite} onChange={e => set(c, e.target.value)} />
+                      <input className="nd-input" value={form[c] ?? ''} disabled={!regles} onChange={e => set(c, e.target.value)} />
                       {a && <small className="nd-cell-sub">{a}</small>}
                     </div>
                   ))}
@@ -268,10 +269,10 @@ export default function Finances() {
           ))}
           <div className="nd-form-group" style={{ maxWidth: 260 }}>
             <label>Réserve (budget mensuel, F)</label>
-            <input className="nd-input" value={form.ECO_BUDGET_RESERVE ?? ''} disabled={!habilite} onChange={e => set('ECO_BUDGET_RESERVE', e.target.value)} />
+            <input className="nd-input" value={form.ECO_BUDGET_RESERVE ?? ''} disabled={!regles} onChange={e => set('ECO_BUDGET_RESERVE', e.target.value)} />
           </div>
 
-          {habilite ? (
+          {regles ? (
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button className="nd-btn nd-btn-primary" disabled={!modifie || busy === 'reglages'} onClick={enregistrer}>
                 <Save size={15} /> Enregistrer (avec motif)

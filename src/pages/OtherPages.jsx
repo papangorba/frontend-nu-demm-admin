@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   apiLivraisons, apiTrajets, apiVehicules, apiReservations,
-  apiNotifs, apiUsers, fmtDate, fmtDT, Audit, Auth, getBaseUrl, setBaseUrl
+  apiNotifs, apiUsers, fmtDate, fmtDT, Audit, Auth, getBaseUrl, setBaseUrl, ROLE_MAP
 } from '../services/api';
 import {
   StatusBadge, RoleBadge, Avatar, MiniCard, Modal,
@@ -599,7 +599,7 @@ export function Admins() {
         {inp('email',{type:'email',placeholder:'Email *'})}
         {inp('password',{type:'password',placeholder:'Mot de passe *'})}
         <select className="nd-input nd-select" value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
-          {['ADMIN','ADMIN1','ADMIN2','MODERATEUR','SUPER_ADMIN'].map(r=><option key={r} value={r}>{r}</option>)}
+          {['ADMIN','ADMIN1','ADMIN2','MODERATEUR','FINANCE','SUPPORT','MARKETING','AUDITEUR','SUPER_ADMIN'].map(r=><option key={r} value={r}>{ROLE_MAP[r]?.label || r}</option>)}
         </select>
         {err && <div className="nd-alert nd-alert-danger">⚠ {err}</div>}
       </Modal>
@@ -1054,7 +1054,7 @@ const FAQ_ITEMS = [
   { q:'Comment ajouter un nouveau chauffeur ?', a:"Section Chauffeurs > + Nouveau Chauffeur. Remplissez le formulaire (prénom, nom, téléphone, type de service, numéro de permis)." },
   { q:'Comment exporter les données ?', a:"Bouton \"Exporter\" en haut à droite de la page Rapports. Les données peuvent être exportées en CSV ou PDF." },
   { q:'Comment gérer les notifications ?', a:"Onglet Notifications > saisir l'ID utilisateur et le type (Client/Chauffeur/Admin) > Charger." },
-  { q:'Quels sont les rôles disponibles ?', a:"5 rôles : SUPER_ADMIN, ADMIN, ADMIN1, ADMIN2 et MODERATEUR, chacun avec des permissions différentes." },
+  { q:'Quels sont les rôles disponibles ?', a:"9 rôles : SUPER_ADMIN, ADMIN, ADMIN1, ADMIN2, MODERATEUR, et ceux du modèle économique : FINANCE (recharges, ajustements, litiges ; ne change pas les règles), SUPPORT (clients, chauffeurs, réclamations ; ne supprime rien), MARKETING (publicités, notifications, rapports ; ne supprime rien) et AUDITEUR (tout en lecture seule)." },
   { q:"Comment configurer l'URL du backend ?", a:"Paramètres > Connexion Backend > entrer l'URL Spring Boot (ex: http://localhost:8080) > Sauvegarder." },
 ];
 

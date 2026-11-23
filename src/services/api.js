@@ -95,7 +95,18 @@ export const Auth = {
     ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','envois-colis','litiges','rapports-finance','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
     MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','litiges','notifications'],
+    // Rôles du modèle économique (le serveur applique les mêmes limites)
+    FINANCE:     ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','audit'],
+    SUPPORT:     ['dashboard','supervision','sos','chauffeurs','clients','commandes','livraisons','envois-colis','reservations','litiges','documents'],
+    MARKETING:   ['dashboard','publicites','notifications','contenus','finances','rapports-finance','clients'],
+    AUDITEUR:    ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','clients','audit'],
   },
+  /** Actions sur l'argent (recharges, ajustements, litiges) */
+  argent() { return ['SUPER_ADMIN','ADMIN','FINANCE'].includes(this.role()); },
+  /** Changer les règles du modèle économique */
+  regles() { return ['SUPER_ADMIN','ADMIN'].includes(this.role()); },
+  /** Auditeur : tout en lecture seule */
+  lectureSeule() { return this.role() === 'AUDITEUR'; },
   can(mod) {
     // L'espace « Mon entreprise » n'a de sens que pour le gérant d'une entreprise de transport
     if (mod === 'mon-entreprise' || mod.startsWith('ent-')) return this.role() === 'GESTIONNAIRE_FLOTTE';
@@ -161,7 +172,7 @@ export const apiUsers = {
   },
   admins: async () => {
     const a = await get(EP.USERS_ALL);
-    return (a||[]).filter(u => ['ADMIN','SUPER_ADMIN','ADMIN1','ADMIN2','MODERATEUR'].includes(u.role));
+    return (a||[]).filter(u => ['ADMIN','SUPER_ADMIN','ADMIN1','ADMIN2','MODERATEUR','FINANCE','SUPPORT','MARKETING','AUDITEUR'].includes(u.role));
   },
   registerChauffeur: d => post(EP.CHAUFFEUR_REGISTER, d),
   registerClient:    d => post(EP.CLIENT_REGISTER, d),
@@ -525,6 +536,10 @@ export const ROLE_MAP = {
   ADMIN1:      { cls: 'role-a1',       label: '🔧 Admin 1' },
   ADMIN2:      { cls: 'role-a2',       label: '🛡 Admin 2' },
   MODERATEUR:  { cls: 'role-mo',       label: '👁 Modérateur' },
+  FINANCE:     { cls: 'role-a1',       label: '💰 Finance' },
+  SUPPORT:     { cls: 'role-a2',       label: '🎧 Support' },
+  MARKETING:   { cls: 'role-admin',    label: '📣 Marketing' },
+  AUDITEUR:    { cls: 'role-mo',       label: '🔍 Auditeur' },
   GESTIONNAIRE_FLOTTE: { cls: 'role-admin', label: '🚌 Entreprise' },
   CLIENT:      { cls: 'role-client',   label: '👤 Client' },
   CHAUFFEUR:   { cls: 'role-chauffeur',label: '🏍 Chauffeur' },

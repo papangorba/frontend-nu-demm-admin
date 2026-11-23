@@ -5,7 +5,7 @@ import { Spinner } from '../components/ui';
 import { useToast } from '../context/AppContext';
 
 /**
- * Litiges et remboursements. Le support ouvre un litige ; la finance (super-admin, admin) décide avec un motif ;
+ * Litiges et remboursements. Le support ouvre un litige ; la finance (super-admin, admin, rôle finance) décide avec un motif ;
  * au-delà du seuil, un AUTRE super-administrateur approuve. Les effets (commission rendue, crédit ou
  * remboursement externe, retenue) sont des écritures compensatoires faites par le serveur.
  */
@@ -23,7 +23,7 @@ const DECISION = { remboursement: '', mode: 'CREDIT', referenceExterne: '', ajus
 export default function Litiges() {
   const toast = useToast();
   const role = Auth.role();
-  const finance = ['SUPER_ADMIN', 'ADMIN'].includes(role);
+  const finance = Auth.argent();   // super-admin, admin, finance
   const [d, setD] = useState(null);
   const [filtre, setFiltre] = useState('EN_COURS');
   const [nouveau, setNouveau] = useState(null);
@@ -96,7 +96,7 @@ export default function Litiges() {
             doit approuver. Rien n'est effacé : le serveur écrit des corrections.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="nd-btn nd-btn-primary" onClick={() => setNouveau({ ...VIDE })}><Plus size={15} /> Ouvrir un litige</button>
+          {!Auth.lectureSeule() && <button className="nd-btn nd-btn-primary" onClick={() => setNouveau({ ...VIDE })}><Plus size={15} /> Ouvrir un litige</button>}
           <button className="nd-btn nd-btn-ghost" onClick={charger}><RefreshCw size={15} /></button>
         </div>
       </div>
