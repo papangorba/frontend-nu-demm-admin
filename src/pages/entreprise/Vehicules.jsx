@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, Bus } from 'lucide-react';
-import { apiMonEntreprise, Audit } from '../../services/api';
+import { apiMonEntreprise, apiCatalogue, Audit } from '../../services/api';
 import { Spinner, Modal } from '../../components/ui';
 import { useToast } from '../../context/AppContext';
 import { TYPES_VEHICULE, ETATS_VEHICULE, EtatVehicule } from './Commun';
@@ -14,6 +14,12 @@ export default function Vehicules() {
   const [max, setMax] = useState(null);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [catalogue, setCatalogue] = useState(null);
+  // Marques et modèles proposés (bus, minibus, voitures) ; toute autre valeur reste possible
+  useEffect(() => { apiCatalogue.vehicules().then(setCatalogue).catch(() => {}); }, []);
+  const categorie = form?.type === 'VOITURE' ? 'VOITURE' : 'BUS';
+  const marques = catalogue ? Object.keys(catalogue.categories?.[categorie] || {}) : [];
+  const modeles = catalogue && form?.marque ? (catalogue.categories?.[categorie]?.[form.marque] || []) : [];
 
   const charger = async () => {
     try {
@@ -104,14 +110,17 @@ export default function Vehicules() {
             <div className="nd-form-group"><label>Places passagers *</label>
               <input className="nd-input" type="number" min="1" max="100" {...champ('nombrePlaces')} placeholder="Ex. 60" /></div>
             <div className="nd-form-group"><label>Immatriculation *</label>
-              <input className="nd-input" {...champ('numeroImmatriculation')} placeholder="Ex. DK-1234-AB" /></div>
+              <input className="nd-input" {...champ('numeroImmatriculation')} placeholder="Ex. DK-1234-AB" style={{ textTransform: 'uppercase' }} /></div>
             <div className="nd-form-group"><label>État</label>
               <select className="nd-input nd-select" {...champ('etat')}>
                 {Object.entries(ETATS_VEHICULE).map(([k, [, l]]) => <option key={k} value={k}>{l}</option>)}
               </select></div>
-            <div className="nd-form-group"><label>Marque</label><input className="nd-input" {...champ('marque')} placeholder="Ex. Tata" /></div>
-            <div className="nd-form-group"><label>Modèle</label><input className="nd-input" {...champ('modele')} /></div>
-            <div className="nd-form-group"><label>Couleur</label><input className="nd-input" {...champ('couleur')} /></div>
+            <div className="nd-form-group"><label>Marque</label><input className="nd-input" list="nd-marques" {...champ('marque')} placeholder="Ex. Tata" />
+              <datalist id="nd-marques">{marques.map(m => <option key={m} value={m} />)}</datalist></div>
+            <div className="nd-form-group"><label>Modèle</label><input className="nd-input" list="nd-modeles" {...champ('modele')} />
+              <datalist id="nd-modeles">{modeles.map(m => <option key={m} value={m} />)}</datalist></div>
+            <div className="nd-form-group"><label>Couleur</label><input className="nd-input" list="nd-couleurs" {...champ('couleur')} />
+              <datalist id="nd-couleurs">{(catalogue?.couleurs || []).map(c => <option key={c} value={c} />)}</datalist></div>
             <div className="nd-form-group"><label>Année</label><input className="nd-input" {...champ('anneeFabrication')} placeholder="Ex. 2019" /></div>
           </div>
         </>}

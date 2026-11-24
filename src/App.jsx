@@ -25,6 +25,7 @@ const Publicites = lazy(() => import('./pages/Publicites'));
 const Contenus = lazy(() => import('./pages/Contenus'));
 const Tarifs = lazy(() => import('./pages/Tarifs'));
 const Documents = lazy(() => import('./pages/Documents'));
+const Identite = lazy(() => import('./pages/Identite'));
 const ControleApp = lazy(() => import('./pages/ControleApp'));
 const AlertesSos = lazy(() => import('./pages/AlertesSos'));
 const Suppressions = lazy(() => import('./pages/Suppressions'));
@@ -91,6 +92,7 @@ function AppRoutes() {
         <Route path="contenus"      element={<Contenus />} />
         <Route path="tarifs"        element={<Tarifs />} />
         <Route path="documents"     element={<Documents />} />
+        <Route path="identite"      element={<Identite />} />
         <Route path="controle"      element={<ControleApp />} />
         <Route path="sessions"      element={<ControleApp mode="sessions" />} />
         <Route path="chauffeurs"    element={<Chauffeurs />} />

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Phone, MapPin, Car, FileText, BarChart3, Clock, Bell, BellOff, Building2, AlertTriangle, CheckCircle2, XCircle, Eye, Users, Star, ShieldAlert } from 'lucide-react';
-import { apiFiche, apiControle, Audit, fmtDT, fmtDate } from '../services/api';
+import { apiFiche, apiControle, Audit, fmtDT, fmtDate, apiIdentite, Auth } from '../services/api';
 import { Avatar, Modal, Spinner } from './ui';
 import { useToast } from '../context/AppContext';
 
@@ -68,6 +68,7 @@ export default function FicheUtilisateur({ userId, onClose, onOuvrirAutre }) {
   const [vehicule, setVehicule] = useState(null);
   const [doc, setDoc] = useState(null);        // { ...document, url }
   const [busy, setBusy] = useState(null);
+  const [alertesId, setAlertesId] = useState([]);
 
   const charger = async () => {
     try { setF(await apiFiche.fiche(userId)); }
@@ -75,6 +76,10 @@ export default function FicheUtilisateur({ userId, onClose, onOuvrirAutre }) {
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (userId) { setF(null); charger(); } }, [userId]);
+  // Contrôle d'identité : autres comptes qui partagent une pièce avec celui-ci
+  useEffect(() => {
+    if (userId && Auth.can('identite')) apiIdentite.duCompte(userId).then(l => setAlertesId(l || [])).catch(() => setAlertesId([]));
+  }, [userId]);
 
   const voirDocument = async d => {
     try { setDoc({ ...d, url: await apiControle.fichierDocument(d.id) }); }
@@ -161,6 +166,19 @@ export default function FicheUtilisateur({ userId, onClose, onOuvrirAutre }) {
               </div>
 
               {chauffeur && <div>
+                {alertesId.length > 0 && (
+                  <div className="nd-card" style={{ padding: 12, marginBottom: 12, borderColor: alertesId.some(a => a.statut === 'OUVERTE') ? 'var(--nd-red)' : undefined }}>
+                    <b style={{ color: alertesId.some(a => a.statut === 'OUVERTE') ? 'var(--nd-red)' : undefined }}>Contrôle d'identité · {alertesId.length} alerte(s)</b>
+                    {alertesId.slice(0, 5).map(a => {
+                      const autre = String(a.compte?.id) === String(userId) ? a.autreCompte : a.compte;
+                      return <div key={a.id} className="nd-cell-sub" style={{ marginTop: 4 }}>
+                        {a.libelle} que {autre?.nom || `#${autre?.id}`} ({autre?.etat === 'SUPPRIME' ? 'supprimé' : autre?.etat === 'SUSPENDU' ? 'suspendu' : 'actif'})
+                        {' · '}{a.statut === 'OUVERTE' ? 'à vérifier' : a.statut === 'TRAITEE' ? 'traitée' : 'fausse alerte'}
+                      </div>;
+                    })}
+                    <a href="/identite" className="nd-cell-sub" style={{ display: 'inline-block', marginTop: 6 }}>Ouvrir le contrôle d'identité</a>
+                  </div>
+                )}
                 <Section icone={Car} titre="Véhicule">
                   {f.vehicules.length === 0 ? <div className="nd-cell-sub">Aucun véhicule enregistré</div> :
                     f.vehicules.map(v => (

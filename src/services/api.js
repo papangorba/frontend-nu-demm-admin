@@ -90,16 +90,16 @@ export const Auth = {
   },
   PERMS: {
     SUPER_ADMIN: ['*'],
-    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
-    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
-    ADMIN2:      ['dashboard','supervision','sos','documents','commandes','livraisons','envois-colis','litiges','rapports-finance','notifications','publicites','audit'],
+    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','identite','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
+    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','identite','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
+    ADMIN2:      ['dashboard','supervision','sos','documents','identite','commandes','livraisons','envois-colis','litiges','rapports-finance','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
     MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','litiges','notifications'],
     // Rôles du modèle économique (le serveur applique les mêmes limites)
     FINANCE:     ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','audit'],
-    SUPPORT:     ['dashboard','supervision','sos','chauffeurs','clients','commandes','livraisons','envois-colis','reservations','litiges','documents'],
+    SUPPORT:     ['dashboard','supervision','sos','chauffeurs','clients','commandes','livraisons','envois-colis','reservations','litiges','documents','identite'],
     MARKETING:   ['dashboard','publicites','notifications','contenus','finances','rapports-finance','clients'],
-    AUDITEUR:    ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','clients','audit'],
+    AUDITEUR:    ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','clients','audit','identite'],
   },
   /** Actions sur l'argent (recharges, ajustements, litiges) */
   argent() { return ['SUPER_ADMIN','ADMIN','FINANCE'].includes(this.role()); },
@@ -412,6 +412,19 @@ export const apiComptesPro = {
   liste:   ()             => get('/api/admin/comptes-pro'),
   decider: (id, statut)   => put(`/api/admin/comptes-pro/${id}`, { statut }),
   releve:  (id, mois)     => get(`/api/admin/comptes-pro/${id}/releve?mois=${mois || ''}`),
+};
+
+// ─── Centre « À faire » + contrôle d'identité des chauffeurs ─
+export const apiAFaire = {
+  liste: () => get('/api/admin/a-faire'),
+};
+export const apiIdentite = {
+  alertes: (statut = 'OUVERTE') => get(`/api/admin/identite/alertes?statut=${statut}`),
+  duCompte: userId               => get(`/api/admin/identite/compte/${userId}`),
+  traiter: (id, statut, note)    => put(`/api/admin/identite/alertes/${id}`, { statut, note }),
+};
+export const apiCatalogue = {
+  vehicules: () => get('/api/public/vehicules/catalogue'),
 };
 
 export const apiSuppressions = {

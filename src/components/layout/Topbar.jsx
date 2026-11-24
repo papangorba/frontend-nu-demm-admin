@@ -7,6 +7,7 @@ import { useAuth, useTheme } from '../../context/AppContext';
 import { ICONES, MENU_SECTIONS } from './Sidebar';
 import EclairsBarre from './EclairsBarre';
 import StatutVoix from './StatutVoix';
+import CentreAFaire from './CentreAFaire';
 
 /** Titre + icône de chaque page, tirés du menu (une seule source). */
 const PAGES = Object.fromEntries(
@@ -42,6 +43,7 @@ export default function Topbar({ onMenuClick }) {
       </div>
       <div className="nd-topbar-right">
         <StatutVoix />
+        <CentreAFaire />
         <div className="nd-topbar-clock"><Clock />{clock}</div>
         {remaining > 0 && (
           <div className="nd-topbar-token" style={{ color: remaining <= 5 ? 'var(--nd-amber)' : 'var(--nd-text-muted)' }}>
