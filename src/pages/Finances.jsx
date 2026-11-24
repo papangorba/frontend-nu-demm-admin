@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, AlertTriangle, Trophy, Gift, PiggyBank } from 'lucide-react';
-import { apiFinances, apiRegions, Audit, Auth, fmtDT } from '../services/api';
+import { apiFinances, Audit, Auth, fmtDT } from '../services/api';
 import { Spinner } from '../components/ui';
 import PaiementsEnLigne from '../components/PaiementsEnLigne';
 import ReglesAnnulation from '../components/ReglesAnnulation';
@@ -46,7 +46,6 @@ export default function Finances() {
   const habilite = Auth.argent();   // recharges, ajustements, défis : super-admin, admin, finance
   const regles = Auth.regles();     // règles du modèle : super-admin, admin
   const [d, setD] = useState(null);
-  const [regions, setRegions] = useState([]);
   const [form, setForm] = useState(null);
   const [busy, setBusy] = useState(null);
   const [fiche, setFiche] = useState(null);
@@ -63,14 +62,11 @@ export default function Finances() {
   };
   useEffect(() => {
     charger();
-    apiRegions.liste().then(r => setRegions(Array.isArray(r) ? r : [])).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const pilotes = useMemo(() => (form?.ECO_REGIONS_PILOTE || '').split(',').filter(Boolean), [form]);
   const modifie = d && form && JSON.stringify(d.reglages) !== JSON.stringify(form);
   const set = (k, v) => setForm(f => ({ ...f, [k]: String(v) }));
-  const basculerRegion = code => set('ECO_REGIONS_PILOTE', pilotes.includes(code) ? pilotes.filter(c => c !== code).join(',') : [...pilotes, code].join(','));
 
   const enregistrer = async () => {
     const motif = demanderMotif('Enregistrer les réglages du modèle économique ?');
@@ -155,7 +151,7 @@ export default function Finances() {
       <div className="nd-page-header">
         <div className="nd-page-header-left">
           <h1>Finances</h1>
-          <p>Modèle économique, phase pilote : commission sur les courses et livraisons terminées des régions choisies,
+          <p>Modèle économique, dans tout le Sénégal : commission sur les courses et livraisons terminées,
             solde prépayé ou commissions à régler. Le serveur fait tous les calculs ; rien n'est jamais effacé.</p>
         </div>
         <button className="nd-btn nd-btn-ghost" onClick={charger}><RefreshCw size={15} /> Actualiser</button>
@@ -178,7 +174,7 @@ export default function Finances() {
 
       {/* ─── Réglages ─── */}
       <div className="nd-card" style={{ marginBottom: 16 }}>
-        <div className="nd-card-header"><h3><Wallet size={16} /> Réglages du pilote</h3></div>
+        <div className="nd-card-header"><h3><Wallet size={16} /> Réglages du modèle économique</h3></div>
         <div className="nd-card-body" style={{ display: 'grid', gap: 16 }}>
           <div className="cp-ligne">
             <div>
@@ -201,15 +197,10 @@ export default function Finances() {
               : 'Dette : au-delà du plafond, le chauffeur ne reçoit plus de demandes.'}</small>
           </div>
 
-          <div>
-            <b>Régions pilotes</b> <small className="nd-cell-sub">la commission ne s'applique qu'aux courses qui partent de ces régions</small>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
-              {regions.map(r => (
-                <button key={r.code} type="button" disabled={!regles} onClick={() => basculerRegion(r.code)}
-                  className={`nd-btn nd-btn-sm ${pilotes.includes(r.code) ? 'nd-btn-primary' : 'nd-btn-outline'}`}>{r.nom}</button>
-              ))}
-            </div>
-            {actif && pilotes.length === 0 && <small style={{ color: 'var(--nd-orange, #f59e0b)' }}>Aucune région choisie : aucune commission ne sera prélevée.</small>}
+          <div className="nd-alert nd-alert-info">
+            <span>🇸🇳</span>
+            <div><b>Tout le Sénégal</b> : la commission, les défis, la fidélité et le parrainage s'appliquent dans les 14 régions.
+              Pour couper un service dans une région, utilisez « Services par région ».</div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
@@ -319,7 +310,7 @@ export default function Finances() {
             <h3><Trophy size={16} /> Défis · semaine {reco.defis.semaine} · {fcfa(reco.defis.bonusEngage)} déjà atteints</h3>
             {habilite && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'cloture'} onClick={cloturer}>Clôturer la semaine dernière</button>}
           </div>
-          {(reco.defis.chauffeurs || []).length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune course terminée cette semaine dans les régions pilotes.</div> : (
+          {(reco.defis.chauffeurs || []).length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune course terminée cette semaine.</div> : (
             <div className="nd-table-wrap"><table className="nd-table">
               <thead><tr><th>Chauffeur</th><th>Courses</th><th>Palier atteint</th></tr></thead>
               <tbody>
