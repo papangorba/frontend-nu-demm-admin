@@ -3,6 +3,7 @@ import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, 
 import { apiFinances, apiRegions, Audit, Auth, fmtDT } from '../services/api';
 import { Spinner } from '../components/ui';
 import PaiementsEnLigne from '../components/PaiementsEnLigne';
+import ReglesAnnulation from '../components/ReglesAnnulation';
 import { useToast } from '../context/AppContext';
 
 /**
@@ -309,6 +310,7 @@ export default function Finances() {
 
       {/* ─── Paiements Wave / Orange Money des apps ─── */}
       <PaiementsEnLigne />
+      <ReglesAnnulation />
 
       {/* ─── Défis de la semaine ─── */}
       {reco?.defis && form.ECO_DEFIS_ACTIF === 'true' && (

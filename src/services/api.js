@@ -253,6 +253,8 @@ export const apiPaiements = {
   liste:       ()               => get('/api/admin/finances/paiements'),
   verser:      ref              => post(`/api/admin/finances/paiements/${ref}/verser`, {}),
   marquerVerse:(ref, reference) => put(`/api/admin/finances/paiements/${ref}/verse`, { reference }),
+  marquerRembourse:(ref, reference) => put(`/api/admin/finances/paiements/${ref}/rembourse`, { reference }),
+  penalites:   ()               => get('/api/admin/penalites'),
 };
 
 // ─── Litiges / remboursements et rapports financiers ────────

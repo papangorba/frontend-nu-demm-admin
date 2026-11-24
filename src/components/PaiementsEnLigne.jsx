@@ -48,6 +48,15 @@ export default function PaiementsEnLigne() {
     setBusy('');
   };
 
+  const rembourser = async p => {
+    const reference = window.prompt(`Remboursement de ${money(p.montantRembourse)} au client fait par ${p.moyen === 'WAVE' ? 'Wave' : 'Orange Money'}.\nRéférence de la transaction :`);
+    if (!reference) return;
+    setBusy(p.reference);
+    try { await apiPaiements.marquerRembourse(p.reference, reference); toast('Remboursement enregistré', 'success'); await charger(); }
+    catch (e) { toast(e.message, 'error'); }
+    setBusy('');
+  };
+
   const marquer = async p => {
     const reference = window.prompt(`${p.versementStatut === 'A_REMBOURSER' ? 'Remboursement' : 'Versement'} de ${money(p.montant)} fait à la main.\nRéférence de la transaction Wave / Orange Money :`);
     if (!reference) return;
@@ -111,7 +120,7 @@ export default function PaiementsEnLigne() {
         </div>
         {liste.length === 0 ? <p className="nd-cell-sub">Aucun paiement en ligne pour le moment.</p> : (
           <div className="nd-table-wrap"><table className="nd-table">
-            <thead><tr><th>Date</th><th>Objet</th><th>Montant</th><th>Moyen</th><th>Statut</th><th>Versement</th><th></th></tr></thead>
+            <thead><tr><th>Date</th><th>Objet</th><th>Montant</th><th>Moyen</th><th>Statut</th><th>Versement</th><th>Remboursement</th><th></th></tr></thead>
             <tbody>{liste.map(p => {
               const [st, stc] = STATUTS[p.statut] || [p.statut, 'badge-secondary'];
               const [ve, vec] = VERSEMENTS[p.versementStatut] || [p.versementStatut, 'badge-secondary'];
@@ -124,13 +133,23 @@ export default function PaiementsEnLigne() {
                   <td><span className={`nd-badge ${stc}`}>{st}</span></td>
                   <td><span className={`nd-badge ${vec}`}>{ve}</span>
                     {p.versementErreur && <div className="nd-cell-sub">{p.versementErreur}</div>}
-                    {p.versementReference && <div className="nd-cell-sub">Réf. {p.versementReference}</div>}</td>
+                    {p.versementReference && <div className="nd-cell-sub">Réf. {p.versementReference}</div>}
+                    {p.montantVerse != null && p.montantVerse !== p.montant && <div className="nd-cell-sub">Part chauffeur : {money(p.montantVerse)}</div>}</td>
+                  <td>{p.montantRembourse > 0 ? (
+                    <><span className={`nd-badge ${p.remboursementStatut === 'FAIT' ? 'badge-success' : 'badge-danger'}`}>
+                      {p.remboursementStatut === 'FAIT' ? 'Remboursé' : 'À rembourser'} {money(p.montantRembourse)}</span>
+                      {p.remboursementReference && <div className="nd-cell-sub">Réf. {p.remboursementReference}</div>}</>
+                  ) : <span className="nd-cell-sub">—</span>}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
                     {argent && p.statut === 'PAYE' && p.versementStatut === 'ECHEC' && p.beneficiaireId && (
                       <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === p.reference} onClick={() => verser(p.reference)}>
                         <Send size={13} /> Réessayer
                       </button>)}
-                    {argent && ['A_FAIRE', 'A_REMBOURSER', 'ECHEC'].includes(p.versementStatut) && (
+                    {argent && p.remboursementStatut === 'A_FAIRE' && (
+                      <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === p.reference} onClick={() => rembourser(p)}>
+                        <CheckCircle2 size={13} /> Remboursé
+                      </button>)}
+                    {argent && ['A_FAIRE', 'ECHEC'].includes(p.versementStatut) && (
                       <button className="nd-btn nd-btn-ghost nd-btn-sm" disabled={busy === p.reference} onClick={() => marquer(p)}>
                         <CheckCircle2 size={13} /> Fait à la main
                       </button>)}
