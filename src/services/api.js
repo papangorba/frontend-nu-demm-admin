@@ -257,6 +257,7 @@ export const apiPaiements = {
   verser:      ref              => post(`/api/admin/finances/paiements/${ref}/verser`, {}),
   marquerVerse:(ref, reference) => put(`/api/admin/finances/paiements/${ref}/verse`, { reference }),
   marquerRembourse:(ref, reference) => put(`/api/admin/finances/paiements/${ref}/rembourse`, { reference }),
+  rembourserPaytech: ref           => post(`/api/admin/finances/paiements/${ref}/rembourser`, {}),
   penalites:   ()               => get('/api/admin/penalites'),
 };
 

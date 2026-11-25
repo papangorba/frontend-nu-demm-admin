@@ -48,6 +48,15 @@ export default function PaiementsEnLigne() {
     setBusy('');
   };
 
+  /** Remboursement lancé chez PayTech (paiement entier) ; confirmé automatiquement à la fin */
+  const rembourserPaytech = async p => {
+    if (!window.confirm(`Rembourser ${money(p.montantRembourse)} au client par PayTech ?`)) return;
+    setBusy(p.reference);
+    try { await apiPaiements.rembourserPaytech(p.reference); toast('Remboursement lancé chez PayTech', 'success'); await charger(); }
+    catch (e) { toast(e.message, 'error'); }
+    finally { setBusy(null); }
+  };
+
   const rembourser = async p => {
     const reference = window.prompt(`Remboursement de ${money(p.montantRembourse)} au client fait par ${p.moyen === 'WAVE' ? 'Wave' : 'Orange Money'}.\nRéférence de la transaction :`);
     if (!reference) return;
@@ -136,8 +145,8 @@ export default function PaiementsEnLigne() {
                     {p.versementReference && <div className="nd-cell-sub">Réf. {p.versementReference}</div>}
                     {p.montantVerse != null && p.montantVerse !== p.montant && <div className="nd-cell-sub">Part chauffeur : {money(p.montantVerse)}</div>}</td>
                   <td>{p.montantRembourse > 0 ? (
-                    <><span className={`nd-badge ${p.remboursementStatut === 'FAIT' ? 'badge-success' : 'badge-danger'}`}>
-                      {p.remboursementStatut === 'FAIT' ? 'Remboursé' : 'À rembourser'} {money(p.montantRembourse)}</span>
+                    <><span className={`nd-badge ${p.remboursementStatut === 'FAIT' ? 'badge-success' : p.remboursementStatut === 'EN_COURS' ? 'badge-warning' : 'badge-danger'}`}>
+                      {p.remboursementStatut === 'FAIT' ? 'Remboursé' : p.remboursementStatut === 'EN_COURS' ? 'Remboursement en cours (PayTech)' : 'À rembourser'} {money(p.montantRembourse)}</span>
                       {p.remboursementReference && <div className="nd-cell-sub">Réf. {p.remboursementReference}</div>}</>
                   ) : <span className="nd-cell-sub">—</span>}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>
@@ -145,6 +154,11 @@ export default function PaiementsEnLigne() {
                       <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === p.reference} onClick={() => verser(p.reference)}>
                         <Send size={13} /> Réessayer
                       </button>)}
+                    {argent && p.remboursementStatut === 'A_FAIRE' && p.montantRembourse === p.montant && (
+                      <><button className="nd-btn nd-btn-primary nd-btn-sm" disabled={busy === p.reference} onClick={() => rembourserPaytech(p)}>
+                        Rembourser par PayTech
+                      </button>{' '}</>
+                    )}
                     {argent && p.remboursementStatut === 'A_FAIRE' && (
                       <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === p.reference} onClick={() => rembourser(p)}>
                         <CheckCircle2 size={13} /> Remboursé
