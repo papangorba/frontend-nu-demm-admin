@@ -5,7 +5,7 @@ import { useToast } from '../context/AppContext';
 
 /**
  * Paiements Wave / Orange Money faits dans les apps : interrupteurs, liste, versements aux chauffeurs.
- * L'argent est encaissé puis reversé aussitôt au chauffeur (payout) ; les acomptes des trajets d'entreprise
+ * L'argent est encaissé par PayTech sur le compte Ñu Demm, puis crédité sur le solde du chauffeur (modèle Yango) ;
  * et les remboursements se font à la main (référence obligatoire).
  */
 const STATUTS = {
@@ -14,6 +14,7 @@ const STATUTS = {
 };
 const VERSEMENTS = {
   VERSE: ['Versé', 'badge-success'], EN_ATTENTE: ['À verser', 'badge-warning'], EN_COURS: ['En cours', 'badge-warning'],
+  APRES_TRAJET: ['Après le trajet', 'badge-secondary'],
   ECHEC: ['Échec du versement', 'badge-danger'], A_FAIRE: ['À verser à la main', 'badge-warning'],
   A_REMBOURSER: ['À rembourser', 'badge-danger'], REMBOURSE: ['Remboursé', 'badge-success'], AUCUN: ['—', 'badge-secondary'],
 };
@@ -126,7 +127,7 @@ export default function PaiementsEnLigne() {
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
             <input type="checkbox" checked={cfg.MODE_TEST_ACTIF === 'true'} disabled={!regles || busy === 'MODE_TEST_ACTIF'}
               onChange={e => basculer('MODE_TEST_ACTIF', e.target.checked)} />
-            🧪 Mode test (en attendant les API Wave / Orange Money)
+            🧪 Mode test (paiement simulé, pour les numéros testeurs)
           </label>
           <p className="nd-cell-sub" style={{ margin: '6px 0' }}>
             Pour les numéros testeurs seulement : paiement simulé (aucun argent réel), commissions prélevées, Mon solde et recharges ouverts,
@@ -152,7 +153,7 @@ export default function PaiementsEnLigne() {
                   <td><span className={`nd-badge ${stc}`}>{st}</span></td>
                   <td><span className={`nd-badge ${vec}`}>{ve}</span>
                     {p.versementErreur && <div className="nd-cell-sub">{p.versementErreur}</div>}
-                    {p.versementReference && <div className="nd-cell-sub">Réf. {p.versementReference}</div>}
+                    {p.versementReference && <div className="nd-cell-sub">{p.versementReference === 'SOLDE' ? 'Crédité sur le solde du chauffeur' : `Réf. ${p.versementReference}`}</div>}
                     {p.montantVerse != null && p.montantVerse !== p.montant && <div className="nd-cell-sub">Part chauffeur : {money(p.montantVerse)}</div>}</td>
                   <td>{p.montantRembourse > 0 ? (
                     <><span className={`nd-badge ${p.remboursementStatut === 'FAIT' ? 'badge-success' : p.remboursementStatut === 'EN_COURS' ? 'badge-warning' : 'badge-danger'}`}>

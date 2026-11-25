@@ -8,8 +8,8 @@ import RetraitsChauffeurs from '../components/RetraitsChauffeurs';
 import { useToast } from '../context/AppContext';
 
 /**
- * Modèle économique — phase pilote.
- * Réglages (mode prépayé / dette, commission, régions pilotes, seuils, numéros marchands),
+ * Modèle économique — tout le Sénégal.
+ * Réglages (mode prépayé / dette, commission, seuils, retraits, numéros marchands),
  * recharges déclarées par les chauffeurs à confirmer, soldes, ajustements et journal d'audit.
  * Toute action sur l'argent : super-admin ou admin, motif obligatoire, tracée côté serveur.
  */

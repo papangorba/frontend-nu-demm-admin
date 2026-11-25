@@ -236,7 +236,7 @@ export const compresserImage = (file, maxW = 1280, qualite = 0.82) =>
     reader.readAsDataURL(file);
   });
 
-// ─── Modèle économique (phase pilote) ───────────────────────
+// ─── Modèle économique (tout le Sénégal) ───────────────────────
 export const apiFinances = {
   vue:       ()                     => get('/api/admin/finances'),
   chauffeur: id                     => get(`/api/admin/finances/chauffeurs/${id}`),
