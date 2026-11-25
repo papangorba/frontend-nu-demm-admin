@@ -97,7 +97,7 @@ export default function PaiementsEnLigne() {
       </div>
       <div className="nd-card-body">
         <p className="nd-cell-sub" style={{ marginTop: 0 }}>
-          Le client paie dans l'app ; l'argent est reversé aussitôt au chauffeur sur son numéro. La commission reste prélevée sur son solde, comme pour les espèces.
+          Le client paie dans l'app (PayTech) ; l'argent est crédité sur le solde Ñu Demm du chauffeur, qui le retire quand il veut. La commission est retirée de son solde, comme pour les espèces.
           {m.simulation && <b> Serveur en simulation : aucun argent réel.</b>}
           {!m.simulation && (m.moyens || []).length === 0 && actif && <b> Aucun fournisseur prêt : ajoutez les clés Wave / Orange Money dans Render.</b>}
         </p>
@@ -110,6 +110,16 @@ export default function PaiementsEnLigne() {
             </label>
           ))}
           <span className="nd-cell-sub">Proposés aux clients : {(m.moyens || []).map(x => x === 'WAVE' ? 'Wave' : 'Orange Money').join(', ') || 'aucun'}</span>
+        </div>
+        {/* Réservations de trajets quand le paiement en ligne de l'acompte n'est pas possible */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+          <b>Réservation sans paiement en ligne :</b>
+          {[['SANS_ACOMPTE', 'Accepter sans acompte (tout payé au chauffeur)'], ['REFUS', 'Refuser la réservation']].map(([v, l]) => (
+            <button key={v} type="button" disabled={!regles || busy === 'RESERVATION_SANS_PAIEMENT'}
+              className={`nd-btn nd-btn-sm ${(cfg.RESERVATION_SANS_PAIEMENT || 'SANS_ACOMPTE') === v ? 'nd-btn-primary' : 'nd-btn-outline'}`}
+              onClick={() => basculer('RESERVATION_SANS_PAIEMENT', v)}>{l}</button>
+          ))}
+          <small className="nd-cell-sub">Un acompte jamais payé (échec, annulation) libère la place aussitôt.</small>
         </div>
         {/* Mode test : tout le parcours (paiement simulé, commissions, solde, recharges) pour quelques numéros seulement */}
         <div style={{ background: '#FFF4E5', borderRadius: 10, padding: 12, marginBottom: 14 }}>
