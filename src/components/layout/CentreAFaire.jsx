@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCircle2, ChevronRight } from 'lucide-react';
 import { apiAFaire, Auth } from '../../services/api';
@@ -16,6 +17,8 @@ export default function CentreAFaire() {
   const [donnees, setDonnees] = useState(null);
   const [ouvert, setOuvert] = useState(false);
   const boite = useRef(null);
+  const panneau = useRef(null);
+  const [place, setPlace] = useState({ top: 60, right: 16 });
 
   useEffect(() => {
     let vivant = true;
@@ -29,7 +32,10 @@ export default function CentreAFaire() {
 
   useEffect(() => {
     if (!ouvert) return;
-    const fermer = e => { if (boite.current && !boite.current.contains(e.target)) setOuvert(false); };
+    const fermer = e => {
+      if (boite.current?.contains(e.target) || panneau.current?.contains(e.target)) return;
+      setOuvert(false);
+    };
     document.addEventListener('mousedown', fermer);
     return () => document.removeEventListener('mousedown', fermer);
   }, [ouvert]);
@@ -41,7 +47,12 @@ export default function CentreAFaire() {
 
   return (
     <div ref={boite} style={{ position: 'relative' }}>
-      <button type="button" className="nd-icon-btn" onClick={() => setOuvert(o => !o)}
+      <button type="button" className="nd-icon-btn" onClick={() => {
+        // La barre du haut coupe ce qui dépasse (éclairs) : la liste s'affiche par-dessus la page, sous la cloche
+        const r = boite.current?.getBoundingClientRect();
+        if (r) setPlace({ top: r.bottom + 8, right: Math.max(16, window.innerWidth - r.right) });
+        setOuvert(o => !o);
+      }}
         title={total ? `${total} chose(s) à faire` : 'Rien à faire'} aria-label="À faire" style={{ position: 'relative' }}>
         <Bell style={urgent ? { color: 'var(--nd-red)' } : undefined} />
         {total > 0 && (
@@ -52,9 +63,9 @@ export default function CentreAFaire() {
           }}>{total > 99 ? '99+' : total}</span>
         )}
       </button>
-      {ouvert && (
-        <div role="dialog" aria-label="À faire" style={{
-          position: 'absolute', right: 0, top: 44, width: 'min(360px, calc(100vw - 32px))', zIndex: 60,
+      {ouvert && createPortal(
+        <div ref={panneau} role="dialog" aria-label="À faire" style={{
+          position: 'fixed', right: place.right, top: place.top, width: 'min(360px, calc(100vw - 32px))', zIndex: 1000,
           background: 'var(--nd-surface)', border: '1px solid var(--nd-border)', borderRadius: 12,
           boxShadow: 'var(--nd-shadow-lg)', overflow: 'hidden',
         }}>
@@ -84,7 +95,8 @@ export default function CentreAFaire() {
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

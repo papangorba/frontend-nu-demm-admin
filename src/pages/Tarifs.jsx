@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiControle, apiRegions, fmtDT, money, Audit } from '../services/api';
 import { Spinner } from '../components/ui';
+import Majorations from '../components/Majorations';
 import { useToast } from '../context/AppContext';
 
 const ICONES = {
@@ -238,6 +239,7 @@ export default function Tarifs() {
       </div>
 
       <PrixParRegion tarifs={tarifs.map(courant)} km={km} />
+      <Majorations />
     </div>
   );
 }
