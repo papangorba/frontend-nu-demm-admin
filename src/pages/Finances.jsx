@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, AlertTriangle, Trophy, Gift, PiggyBank } from 'lucide-react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Wallet, RefreshCw, CheckCircle2, XCircle, Phone, Save, Scale, History, AlertTriangle, Trophy, Gift, PiggyBank, ChevronDown, ChevronUp, Inbox, Users, Settings2, CreditCard } from 'lucide-react';
 import { apiFinances, Audit, Auth, fmtDT } from '../services/api';
 import { Spinner } from '../components/ui';
 import PaiementsEnLigne from '../components/PaiementsEnLigne';
@@ -23,8 +23,96 @@ const ACTIONS = {
   DEFI_SANS_BUDGET: 'Défi : budget épuisé', CREDIT_SANS_BUDGET: 'Crédit : budget épuisé',
   PARRAINAGE_SUSPECT: 'Parrainage suspect', PARRAINAGE_PLAFOND: 'Parrainage : plafond atteint',
   LITIGE_OUVERT: 'Litige ouvert', LITIGE_A_APPROUVER: 'Litige : approbation demandée', LITIGE_ACCEPTE: 'Litige accepté', LITIGE_REFUSE: 'Litige refusé',
+  RETRAIT_PAYE: 'Retrait envoyé', RETRAIT_REFUSE: 'Retrait refusé',
 };
-const TYPES = { COMMISSION: 'Commissions', RECHARGE: 'Recharges / règlements', AJUSTEMENT: 'Ajustements', BONUS: 'Bonus des défis', REMISE_CLIENT: 'Crédits clients remboursés', ANNULATION_COMMISSION: 'Commissions rendues', RETENUE: 'Retenues' };
+/** Familles d'actions du journal (filtre) */
+const FAMILLES = [
+  ['TOUT', 'Tout'],
+  ['ARGENT', 'Recharges et retraits', a => a.startsWith('RECHARGE') || a.startsWith('RETRAIT')],
+  ['AJUSTEMENT', 'Ajustements', a => a === 'AJUSTEMENT'],
+  ['REGLAGES', 'Réglages', a => a === 'REGLAGES'],
+  ['LITIGE', 'Litiges', a => a.startsWith('LITIGE')],
+  ['RECOMPENSES', 'Défis, budgets, parrainage', a => /DEFI|BUDGET|CREDIT|PARRAINAGE/.test(a)],
+];
+const PAR_PAGE = 10;
+const TYPES = { COMMISSION: 'Commissions', RECHARGE: 'Recharges / règlements', AJUSTEMENT: 'Ajustements', BONUS: 'Bonus des défis', REMISE_CLIENT: 'Crédits clients remboursés', ANNULATION_COMMISSION: 'Commissions rendues', RETENUE: 'Retenues', PAIEMENT_CLIENT: 'Paiements en ligne crédités', RETRAIT: 'Retraits', RETRAIT_ANNULE: 'Retraits refusés (rendus)', FRAIS_ANNULATION: "Frais d'annulation" };
+
+/** Journal des actions : replié, filtré par famille, 10 lignes à la fois, détail sur demande */
+function Journal({ journal, totaux }) {
+  const [ouvert, setOuvert] = useState(false);
+  const [famille, setFamille] = useState('TOUT');
+  const [detail, setDetail] = useState(null);
+  const [n, setN] = useState(PAR_PAGE);
+  const filtre = FAMILLES.find(f => f[0] === famille)?.[2];
+  const liste = useMemo(() => (journal || []).filter(j => !filtre || filtre(j.action)), [journal, filtre]);
+  return (
+    <div className="nd-card" style={{ marginBottom: 16 }}>
+      <button type="button" className="nd-card-header" onClick={() => setOuvert(o => !o)}
+        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 0, cursor: 'pointer', color: 'inherit' }}>
+        <h3 style={{ margin: 0 }}><History size={16} /> Journal des actions financières ({(journal || []).length})</h3>
+        <span className="nd-cell-sub" style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+          {ouvert ? <>Masquer <ChevronUp size={15} /></> : <>Afficher <ChevronDown size={15} /></>}
+        </span>
+      </button>
+      {ouvert && <>
+        <div className="nd-card-body" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 6 }}>
+          {FAMILLES.map(([k, l, f]) => {
+            const nb = (journal || []).filter(j => !f || f(j.action)).length;
+            return <button key={k} type="button" className={`nd-btn nd-btn-sm ${famille === k ? 'nd-btn-primary' : 'nd-btn-outline'}`}
+              onClick={() => { setFamille(k); setN(PAR_PAGE); setDetail(null); }}>{l} ({nb})</button>;
+          })}
+        </div>
+        {liste.length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune action de ce type.</div> : (
+          <div className="nd-table-wrap"><table className="nd-table">
+            <thead><tr><th>Date</th><th>Action</th><th>Par</th><th style={{ textAlign: 'right' }}></th></tr></thead>
+            <tbody>
+              {liste.slice(0, n).map(j => (
+                <Fragment key={j.id}>
+                  <tr>
+                    <td className="nd-cell-sub" style={{ whiteSpace: 'nowrap' }}>{fmtDT(j.creeLe)}</td>
+                    <td><b>{ACTIONS[j.action] || j.action}</b></td>
+                    <td className="nd-cell-sub">{j.auteur}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => setDetail(x => (x === j.id ? null : j.id))}>
+                        {detail === j.id ? 'Fermer' : 'Détails'}
+                      </button>
+                    </td>
+                  </tr>
+                  {detail === j.id && (
+                    <tr><td colSpan={4} style={{ background: 'var(--nd-surface2)' }}>
+                      <div><b>Motif :</b> {j.motif || '—'}</div>
+                      {(j.avant || j.apres) && <div style={{ wordBreak: 'break-word' }}><b>Avant :</b> {j.avant ?? '—'}<br /><b>Après :</b> {j.apres ?? '—'}</div>}
+                      <div className="nd-cell-sub">{j.roleAuteur ? `Rôle : ${j.roleAuteur}` : ''}{j.chauffeurId ? ` · chauffeur #${j.chauffeurId}` : ''}</div>
+                    </td></tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table></div>
+        )}
+        {liste.length > n && (
+          <div className="nd-card-body" style={{ textAlign: 'center' }}>
+            <button className="nd-btn nd-btn-outline nd-btn-sm" onClick={() => setN(x => x + PAR_PAGE)}>Voir {Math.min(PAR_PAGE, liste.length - n)} de plus</button>
+          </div>
+        )}
+        <div className="nd-card-body nd-cell-sub" style={{ fontSize: 12 }}>
+          Totaux depuis le début : {Object.entries(totaux || {}).map(([k, v]) => `${TYPES[k] || k} ${v.nombre} · ${fcfa(v.total)}`).join('  ·  ')}
+        </div>
+      </>}
+    </div>
+  );
+}
+
+/** Une explication courte sous chaque chiffre, en mots simples */
+function Chiffre({ titre, valeur, aide, couleur }) {
+  return (
+    <div className="nd-card"><div className="nd-card-body">
+      <div className="nd-cell-sub" style={{ fontWeight: 600 }}>{titre}</div>
+      <div style={{ fontSize: 24, fontWeight: 800, color: couleur }}>{valeur}</div>
+      <div className="nd-cell-sub" style={{ fontSize: 12 }}>{aide}</div>
+    </div></div>
+  );
+}
 const ENVELOPPES = { BONUS: 'Bonus chauffeurs (défis)', FIDELITE: 'Fidélité clients', PARRAINAGE: 'Parrainage', RESERVE: 'Réserve' };
 
 function Interrupteur({ actif, onChange }) {
@@ -52,6 +140,8 @@ export default function Finances() {
   const [fiche, setFiche] = useState(null);
   const [reco, setReco] = useState(null);
   const [recherche, setRecherche] = useState('');
+  const [onglet, setOnglet] = useState('TRAITER');
+  const [aTraiter, setATraiter] = useState({ retraits: 0 });
 
   const charger = async () => {
     try {
@@ -59,6 +149,7 @@ export default function Finances() {
       setD(v);
       setReco(r);
       setForm({ ...v.reglages });
+      apiFinances.retraits().then(x => setATraiter({ retraits: (x?.enAttente || []).length })).catch(() => {});
     } catch (e) { toast(e.message, 'error'); }
   };
   useEffect(() => {
@@ -147,32 +238,187 @@ export default function Finances() {
   const q = recherche.trim().toLowerCase();
   const chauffeurs = (d.chauffeurs || []).filter(c => !q || `${c.nom} ${c.telephone}`.toLowerCase().includes(q));
 
+  const nbRecharges = (d.rechargesEnAttente || []).length;
+  const ONGLETS = [
+    ['TRAITER', <><Inbox size={15} /> À traiter{nbRecharges + aTraiter.retraits ? ` (${nbRecharges + aTraiter.retraits})` : ''}</>],
+    ['SOLDES', <><Users size={15} /> Soldes des chauffeurs</>],
+    ['PAIEMENTS', <><CreditCard size={15} /> Paiements en ligne</>],
+    ['RECOMPENSES', <><Trophy size={15} /> Défis et budgets</>],
+    ['REGLAGES', <><Settings2 size={15} /> Réglages</>],
+  ];
+
   return (
     <div className="fade-in">
       <div className="nd-page-header">
         <div className="nd-page-header-left">
           <h1>Finances</h1>
-          <p>Modèle économique, dans tout le Sénégal : commission sur les courses et livraisons terminées,
-            solde prépayé ou commissions à régler. Le serveur fait tous les calculs ; rien n'est jamais effacé.</p>
+          <p>Ce que Ñu Demm gagne (commissions), ce que les chauffeurs doivent, et l'argent à leur envoyer.
+            Le serveur fait tous les calculs ; rien n'est jamais effacé.</p>
         </div>
         <button className="nd-btn nd-btn-ghost" onClick={charger}><RefreshCw size={15} /> Actualiser</button>
       </div>
 
       <div className="nd-stat-grid">
-        {[
-          ['Commissions prélevées', fcfa(-(d.totaux?.COMMISSION?.total || 0)), `${d.totaux?.COMMISSION?.nombre || 0} courses / livraisons`],
-          ['Recharges confirmées', fcfa(d.totaux?.RECHARGE?.total || 0), `${d.totaux?.RECHARGE?.nombre || 0} opérations`],
-          [prepaye ? 'Soldes négatifs (à recharger)' : 'Commissions à régler', fcfa(d.totalARegler), `${d.chauffeursBloques || 0} chauffeur(s) bloqué(s)`],
-          ['Soldes positifs des chauffeurs', fcfa(d.totalAvoirs), `${(d.chauffeurs || []).length} chauffeurs concernés`],
-        ].map(([l, v, s]) => (
-          <div key={l} className="nd-card"><div className="nd-card-body">
-            <div className="nd-cell-sub">{l}</div>
-            <div style={{ fontSize: 22, fontWeight: 800 }}>{v}</div>
-            <div className="nd-cell-sub">{s}</div>
-          </div></div>
+        <Chiffre titre="Gagné par Ñu Demm" valeur={fcfa(-(d.totaux?.COMMISSION?.total || 0) - (d.totaux?.ANNULATION_COMMISSION?.total || 0))}
+          aide={`Commissions sur ${d.totaux?.COMMISSION?.nombre || 0} courses et livraisons terminées`} couleur="var(--nd-green)" />
+        <Chiffre titre="Les chauffeurs doivent" valeur={fcfa(d.totalARegler)}
+          aide={`${d.chauffeursBloques || 0} chauffeur(s) bloqué(s) : ils doivent recharger`} couleur={d.totalARegler ? 'var(--nd-red)' : undefined} />
+        <Chiffre titre="Argent des chauffeurs chez Ñu Demm" valeur={fcfa(d.totalAvoirs)}
+          aide="Paiements en ligne et bonus pas encore retirés" />
+        <Chiffre titre="À traiter maintenant" valeur={nbRecharges + aTraiter.retraits}
+          aide={`${aTraiter.retraits} retrait(s) à envoyer · ${nbRecharges} recharge(s) à vérifier`}
+          couleur={nbRecharges + aTraiter.retraits ? 'var(--nd-orange)' : 'var(--nd-green)'} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '4px 0 16px' }}>
+        {ONGLETS.map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setOnglet(k)}
+            className={`nd-btn ${onglet === k ? 'nd-btn-primary' : 'nd-btn-outline'}`}
+            style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>{l}</button>
         ))}
       </div>
 
+      {onglet === 'TRAITER' && <>
+        <div className="nd-alert nd-alert-info" style={{ marginBottom: 16 }}>
+          <span>💡</span>
+          <div><b>Retraits</b> : le chauffeur veut récupérer l'argent de son solde → envoyez-le sur son Wave / Orange Money puis cliquez « Envoyé ».<br />
+            <b>Recharges</b> : le chauffeur dit avoir envoyé de l'argent à Ñu Demm → vérifiez sur votre téléphone puis « Confirmer ».</div>
+        </div>
+        <RetraitsChauffeurs />
+      {/* ─── Recharges à confirmer ─── */}
+      <div className="nd-card" style={{ marginBottom: 16 }}>
+        <div className="nd-card-header"><h3><CheckCircle2 size={16} /> Recharges à confirmer ({(d.rechargesEnAttente || []).length})</h3></div>
+        {(d.rechargesEnAttente || []).length === 0 ? (
+          <div className="nd-card-body nd-cell-sub">Aucune recharge en attente.</div>
+        ) : (
+          <div className="nd-table-wrap"><table className="nd-table">
+            <thead><tr><th>Chauffeur</th><th>Montant</th><th>Moyen / référence</th><th>Déclarée</th><th>Solde actuel</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
+            <tbody>
+              {d.rechargesEnAttente.map(r => (
+                <tr key={r.id}>
+                  <td><b>{r.nom}</b><div className="nd-cell-sub"><Phone size={11} /> {joli(r.telephone)}</div></td>
+                  <td><b>{fcfa(r.montant)}</b></td>
+                  <td>{MOYENS[r.moyen]}<div className="nd-cell-sub" style={{ fontFamily: 'monospace' }}>{r.referenceTransaction}</div></td>
+                  <td className="nd-cell-sub">{fmtDT(r.creeLe)}</td>
+                  <td style={{ color: r.soldeActuel < 0 ? '#ef4444' : undefined }}>{fcfa(r.soldeActuel)}</td>
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    {habilite && <>
+                      <button className="nd-btn nd-btn-primary nd-btn-sm" disabled={busy === `r${r.id}`} onClick={() => confirmer(r)}><CheckCircle2 size={14} /> Confirmer</button>{' '}
+                      <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === `r${r.id}`} onClick={() => refuser(r)}><XCircle size={14} /> Refuser</button>
+                    </>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        )}
+      </div>
+
+      </>}
+
+      {onglet === 'SOLDES' && <>
+      {/* ─── Soldes ─── */}
+      <div className="nd-card" style={{ marginBottom: 16 }}>
+        <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <h3><Scale size={16} /> Soldes des chauffeurs</h3>
+          <input className="nd-input" style={{ maxWidth: 260 }} placeholder="Rechercher (nom, numéro)" value={recherche} onChange={e => setRecherche(e.target.value)} />
+        </div>
+        {chauffeurs.length === 0 ? <div className="nd-card-body nd-cell-sub">Aucun chauffeur avec des écritures pour l'instant.</div> : (
+          <div className="nd-table-wrap"><table className="nd-table">
+            <thead><tr><th>Chauffeur</th><th>{prepaye ? 'Solde' : 'Solde (négatif = à régler)'}</th><th>État</th><th style={{ textAlign: 'right' }}>Détail</th></tr></thead>
+            <tbody>
+              {chauffeurs.map(c => (
+                <tr key={c.id}>
+                  <td><b>{c.nom}</b><div className="nd-cell-sub">{joli(c.telephone)}</div></td>
+                  <td style={{ fontWeight: 700, color: c.solde < 0 ? '#ef4444' : '#16a34a' }}>{fcfa(c.solde)}</td>
+                  <td>{c.bloque ? <span className="nd-badge badge-danger"><AlertTriangle size={12} /> Bloqué</span> : <span className="nd-badge badge-success">Actif</span>}</td>
+                  <td style={{ textAlign: 'right' }}><button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => ouvrirFiche(c)}><History size={14} /> Historique</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        )}
+      </div>
+
+      {/* ─── Historique d'un chauffeur ─── */}
+      {fiche && (
+        <div className="nd-card" style={{ marginBottom: 16 }}>
+          <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h3><History size={16} /> {fiche.nom} · {fcfa(fiche.solde)}</h3>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {habilite && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'ajuster'} onClick={ajuster}>Ajuster (avec motif)</button>}
+              <button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => setFiche(null)}>Fermer</button>
+            </div>
+          </div>
+          <div className="nd-table-wrap"><table className="nd-table">
+            <thead><tr><th>Date</th><th>Opération</th><th style={{ textAlign: 'right' }}>Montant</th></tr></thead>
+            <tbody>
+              {(fiche.historique || []).map(e => (
+                <tr key={e.id}>
+                  <td className="nd-cell-sub">{fmtDT(e.creeLe)}</td>
+                  <td>{e.motif}<div className="nd-cell-sub" style={{ fontFamily: 'monospace' }}>{e.reference}</div></td>
+                  <td style={{ textAlign: 'right', fontWeight: 700, color: e.montant < 0 ? '#ef4444' : '#16a34a' }}>{e.montant > 0 ? '+' : ''}{fcfa(e.montant)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table></div>
+        </div>
+      )}
+
+      </>}
+
+      {onglet === 'PAIEMENTS' && <PaiementsEnLigne />}
+
+      {onglet === 'RECOMPENSES' && <>
+      {/* ─── Budget du mois ─── */}
+      {reco?.budgets && (
+        <div className="nd-card" style={{ marginBottom: 16 }}>
+          <div className="nd-card-header"><h3><PiggyBank size={16} /> Budget des récompenses ce mois-ci</h3></div>
+          <div className="nd-card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+            {reco.budgets.map(b => {
+              const couleur = b.pourcent >= 100 ? '#ef4444' : b.pourcent >= 80 ? '#f59e0b' : '#16a34a';
+              return (
+                <div key={b.enveloppe}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>{ENVELOPPES[b.enveloppe]}</b><span style={{ color: couleur, fontWeight: 700 }}>{b.pourcent} %</span></div>
+                  <div style={{ height: 8, borderRadius: 8, background: 'var(--nd-surface3)', margin: '6px 0', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, b.pourcent)}%`, height: '100%', background: couleur }} />
+                  </div>
+                  <small className="nd-cell-sub">{fcfa(b.depense)} sur {fcfa(b.budget)} · reste {fcfa(b.restant)}</small>
+                </div>
+              );
+            })}
+          </div>
+          <div className="nd-card-body nd-cell-sub" style={{ paddingTop: 0, fontSize: 12 }}>
+            Une récompense qui dépasserait son enveloppe n'est jamais créée (contrôle du serveur). Alertes dans le journal à 80, 90 et 100 %.
+          </div>
+        </div>
+      )}
+
+      {/* ─── Défis de la semaine ─── */}
+      {reco?.defis && form.ECO_DEFIS_ACTIF === 'true' && (
+        <div className="nd-card" style={{ marginBottom: 16 }}>
+          <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h3><Trophy size={16} /> Défis · semaine {reco.defis.semaine} · {fcfa(reco.defis.bonusEngage)} déjà atteints</h3>
+            {habilite && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'cloture'} onClick={cloturer}>Clôturer la semaine dernière</button>}
+          </div>
+          {(reco.defis.chauffeurs || []).length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune course terminée cette semaine.</div> : (
+            <div className="nd-table-wrap"><table className="nd-table">
+              <thead><tr><th>Chauffeur</th><th>Courses</th><th>Palier atteint</th></tr></thead>
+              <tbody>
+                {reco.defis.chauffeurs.map(c => (
+                  <tr key={c.id}><td>{c.nom}</td><td><b>{c.courses}</b></td><td>{c.bonus ? fcfa(c.bonus) : '—'}</td></tr>
+                ))}
+              </tbody>
+            </table></div>
+          )}
+          <div className="nd-card-body nd-cell-sub" style={{ fontSize: 12 }}>Versement automatique chaque lundi à 1 h (heure de Dakar) sur le solde des chauffeurs.</div>
+        </div>
+      )}
+
+        {!reco?.budgets && <div className="nd-card"><div className="nd-card-body nd-cell-sub">Aucune donnée de récompenses.</div></div>}
+      </>}
+
+      {onglet === 'REGLAGES' && <>
       {/* ─── Réglages ─── */}
       <div className="nd-card" style={{ marginBottom: 16 }}>
         <div className="nd-card-header"><h3><Wallet size={16} /> Réglages du modèle économique</h3></div>
@@ -276,158 +522,10 @@ export default function Finances() {
         </div>
       </div>
 
-      {/* ─── Budget du mois ─── */}
-      {reco?.budgets && (
-        <div className="nd-card" style={{ marginBottom: 16 }}>
-          <div className="nd-card-header"><h3><PiggyBank size={16} /> Budget des récompenses ce mois-ci</h3></div>
-          <div className="nd-card-body" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-            {reco.budgets.map(b => {
-              const couleur = b.pourcent >= 100 ? '#ef4444' : b.pourcent >= 80 ? '#f59e0b' : '#16a34a';
-              return (
-                <div key={b.enveloppe}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}><b>{ENVELOPPES[b.enveloppe]}</b><span style={{ color: couleur, fontWeight: 700 }}>{b.pourcent} %</span></div>
-                  <div style={{ height: 8, borderRadius: 8, background: 'var(--nd-surface3)', margin: '6px 0', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(100, b.pourcent)}%`, height: '100%', background: couleur }} />
-                  </div>
-                  <small className="nd-cell-sub">{fcfa(b.depense)} sur {fcfa(b.budget)} · reste {fcfa(b.restant)}</small>
-                </div>
-              );
-            })}
-          </div>
-          <div className="nd-card-body nd-cell-sub" style={{ paddingTop: 0, fontSize: 12 }}>
-            Une récompense qui dépasserait son enveloppe n'est jamais créée (contrôle du serveur). Alertes dans le journal à 80, 90 et 100 %.
-          </div>
-        </div>
-      )}
+        <ReglesAnnulation />
+      </>}
 
-      {/* ─── Paiements Wave / Orange Money des apps ─── */}
-      <PaiementsEnLigne />
-      <ReglesAnnulation />
-
-      {/* ─── Défis de la semaine ─── */}
-      {reco?.defis && form.ECO_DEFIS_ACTIF === 'true' && (
-        <div className="nd-card" style={{ marginBottom: 16 }}>
-          <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h3><Trophy size={16} /> Défis · semaine {reco.defis.semaine} · {fcfa(reco.defis.bonusEngage)} déjà atteints</h3>
-            {habilite && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'cloture'} onClick={cloturer}>Clôturer la semaine dernière</button>}
-          </div>
-          {(reco.defis.chauffeurs || []).length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune course terminée cette semaine.</div> : (
-            <div className="nd-table-wrap"><table className="nd-table">
-              <thead><tr><th>Chauffeur</th><th>Courses</th><th>Palier atteint</th></tr></thead>
-              <tbody>
-                {reco.defis.chauffeurs.map(c => (
-                  <tr key={c.id}><td>{c.nom}</td><td><b>{c.courses}</b></td><td>{c.bonus ? fcfa(c.bonus) : '—'}</td></tr>
-                ))}
-              </tbody>
-            </table></div>
-          )}
-          <div className="nd-card-body nd-cell-sub" style={{ fontSize: 12 }}>Versement automatique chaque lundi à 1 h (heure de Dakar) sur le solde des chauffeurs.</div>
-        </div>
-      )}
-
-      {/* ─── Retraits demandés par les chauffeurs ─── */}
-      <RetraitsChauffeurs />
-
-      {/* ─── Recharges à confirmer ─── */}
-      <div className="nd-card" style={{ marginBottom: 16 }}>
-        <div className="nd-card-header"><h3><CheckCircle2 size={16} /> Recharges à confirmer ({(d.rechargesEnAttente || []).length})</h3></div>
-        {(d.rechargesEnAttente || []).length === 0 ? (
-          <div className="nd-card-body nd-cell-sub">Aucune recharge en attente.</div>
-        ) : (
-          <div className="nd-table-wrap"><table className="nd-table">
-            <thead><tr><th>Chauffeur</th><th>Montant</th><th>Moyen / référence</th><th>Déclarée</th><th>Solde actuel</th><th style={{ textAlign: 'right' }}>Actions</th></tr></thead>
-            <tbody>
-              {d.rechargesEnAttente.map(r => (
-                <tr key={r.id}>
-                  <td><b>{r.nom}</b><div className="nd-cell-sub"><Phone size={11} /> {joli(r.telephone)}</div></td>
-                  <td><b>{fcfa(r.montant)}</b></td>
-                  <td>{MOYENS[r.moyen]}<div className="nd-cell-sub" style={{ fontFamily: 'monospace' }}>{r.referenceTransaction}</div></td>
-                  <td className="nd-cell-sub">{fmtDT(r.creeLe)}</td>
-                  <td style={{ color: r.soldeActuel < 0 ? '#ef4444' : undefined }}>{fcfa(r.soldeActuel)}</td>
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    {habilite && <>
-                      <button className="nd-btn nd-btn-primary nd-btn-sm" disabled={busy === `r${r.id}`} onClick={() => confirmer(r)}><CheckCircle2 size={14} /> Confirmer</button>{' '}
-                      <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === `r${r.id}`} onClick={() => refuser(r)}><XCircle size={14} /> Refuser</button>
-                    </>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        )}
-      </div>
-
-      {/* ─── Soldes ─── */}
-      <div className="nd-card" style={{ marginBottom: 16 }}>
-        <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <h3><Scale size={16} /> Soldes des chauffeurs</h3>
-          <input className="nd-input" style={{ maxWidth: 260 }} placeholder="Rechercher (nom, numéro)" value={recherche} onChange={e => setRecherche(e.target.value)} />
-        </div>
-        {chauffeurs.length === 0 ? <div className="nd-card-body nd-cell-sub">Aucun chauffeur avec des écritures pour l'instant.</div> : (
-          <div className="nd-table-wrap"><table className="nd-table">
-            <thead><tr><th>Chauffeur</th><th>{prepaye ? 'Solde' : 'Solde (négatif = à régler)'}</th><th>État</th><th style={{ textAlign: 'right' }}>Détail</th></tr></thead>
-            <tbody>
-              {chauffeurs.map(c => (
-                <tr key={c.id}>
-                  <td><b>{c.nom}</b><div className="nd-cell-sub">{joli(c.telephone)}</div></td>
-                  <td style={{ fontWeight: 700, color: c.solde < 0 ? '#ef4444' : '#16a34a' }}>{fcfa(c.solde)}</td>
-                  <td>{c.bloque ? <span className="nd-badge badge-danger"><AlertTriangle size={12} /> Bloqué</span> : <span className="nd-badge badge-success">Actif</span>}</td>
-                  <td style={{ textAlign: 'right' }}><button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => ouvrirFiche(c)}><History size={14} /> Historique</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        )}
-      </div>
-
-      {/* ─── Historique d'un chauffeur ─── */}
-      {fiche && (
-        <div className="nd-card" style={{ marginBottom: 16 }}>
-          <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h3><History size={16} /> {fiche.nom} · {fcfa(fiche.solde)}</h3>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {habilite && <button className="nd-btn nd-btn-outline nd-btn-sm" disabled={busy === 'ajuster'} onClick={ajuster}>Ajuster (avec motif)</button>}
-              <button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => setFiche(null)}>Fermer</button>
-            </div>
-          </div>
-          <div className="nd-table-wrap"><table className="nd-table">
-            <thead><tr><th>Date</th><th>Opération</th><th style={{ textAlign: 'right' }}>Montant</th></tr></thead>
-            <tbody>
-              {(fiche.historique || []).map(e => (
-                <tr key={e.id}>
-                  <td className="nd-cell-sub">{fmtDT(e.creeLe)}</td>
-                  <td>{e.motif}<div className="nd-cell-sub" style={{ fontFamily: 'monospace' }}>{e.reference}</div></td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, color: e.montant < 0 ? '#ef4444' : '#16a34a' }}>{e.montant > 0 ? '+' : ''}{fcfa(e.montant)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        </div>
-      )}
-
-      {/* ─── Journal ─── */}
-      <div className="nd-card">
-        <div className="nd-card-header"><h3><History size={16} /> Journal des actions financières</h3></div>
-        {(d.journal || []).length === 0 ? <div className="nd-card-body nd-cell-sub">Aucune action pour l'instant.</div> : (
-          <div className="nd-table-wrap"><table className="nd-table">
-            <thead><tr><th>Date</th><th>Action</th><th>Par</th><th>Motif</th><th>Avant → après</th></tr></thead>
-            <tbody>
-              {d.journal.map(j => (
-                <tr key={j.id}>
-                  <td className="nd-cell-sub">{fmtDT(j.creeLe)}</td>
-                  <td><b>{ACTIONS[j.action] || j.action}</b></td>
-                  <td className="nd-cell-sub">{j.auteur}{j.roleAuteur ? ` (${j.roleAuteur})` : ''}</td>
-                  <td>{j.motif}</td>
-                  <td className="nd-cell-sub" style={{ maxWidth: 360, wordBreak: 'break-word' }}>{j.avant || j.apres ? `${j.avant ?? '—'} → ${j.apres ?? '—'}` : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
-        )}
-        <div className="nd-card-body nd-cell-sub" style={{ fontSize: 12 }}>
-          {Object.entries(d.totaux || {}).map(([k, v]) => `${TYPES[k] || k} : ${v.nombre} · ${fcfa(v.total)}`).join('  ·  ')}
-        </div>
-      </div>
+      <Journal journal={d.journal} totaux={d.totaux} />
     </div>
   );
 }
