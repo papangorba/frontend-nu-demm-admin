@@ -246,6 +246,9 @@ export const apiFinances = {
   ajuster:   (id, montant, motif)   => post(`/api/admin/finances/chauffeurs/${id}/ajustement`, { montant, motif }),
   recompenses: ()                   => get('/api/admin/finances/recompenses'),
   cloturer:  lundi                  => post('/api/admin/finances/defis/cloturer', lundi ? { lundi } : {}),
+  retraits:  ()                     => get('/api/admin/finances/retraits'),
+  payerRetrait:   (id, reference)  => put(`/api/admin/finances/retraits/${id}/payer`, { reference }),
+  refuserRetrait: (id, motif)      => put(`/api/admin/finances/retraits/${id}/refuser`, { motif }),
 };
 
 // ─── Paiements Wave / Orange Money faits dans les apps ──────

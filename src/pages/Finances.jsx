@@ -4,6 +4,7 @@ import { apiFinances, Audit, Auth, fmtDT } from '../services/api';
 import { Spinner } from '../components/ui';
 import PaiementsEnLigne from '../components/PaiementsEnLigne';
 import ReglesAnnulation from '../components/ReglesAnnulation';
+import RetraitsChauffeurs from '../components/RetraitsChauffeurs';
 import { useToast } from '../context/AppContext';
 
 /**
@@ -323,6 +324,9 @@ export default function Finances() {
           <div className="nd-card-body nd-cell-sub" style={{ fontSize: 12 }}>Versement automatique chaque lundi à 1 h (heure de Dakar) sur le solde des chauffeurs.</div>
         </div>
       )}
+
+      {/* ─── Retraits demandés par les chauffeurs ─── */}
+      <RetraitsChauffeurs />
 
       {/* ─── Recharges à confirmer ─── */}
       <div className="nd-card" style={{ marginBottom: 16 }}>
