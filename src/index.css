@@ -536,6 +536,7 @@ body {
 .leaflet-container { font-family:var(--nd-font); background:var(--nd-surface2); }
 /* Carte OSM : épurée en clair, « mode nuit » en sombre (sans fournisseur payant) */
 .sv-tiles-light { filter:saturate(.75) contrast(.97); }
+@media (max-width: 900px) { .ct-grille { grid-template-columns: 1fr !important; } }
 .sv-tiles-dark  { filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.55); }
 
 /* ─── Centre de notifications ─── */

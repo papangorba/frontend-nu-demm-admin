@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Chauffeurs = lazy(() => import('./pages/Chauffeurs'));
 const Clients = lazy(() => import('./pages/Clients'));
 const Commandes = lazy(() => import('./pages/Commandes'));
+const CommandeTelephone = lazy(() => import('./pages/CommandeTelephone'));
 const Supervision = lazy(() => import('./pages/Supervision'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Publicites = lazy(() => import('./pages/Publicites'));
@@ -79,6 +80,7 @@ function AppRoutes() {
         <Route path="mon-entreprise/trajets"    element={<EntTrajets />} />
         <Route path="entreprises"   element={<Entreprises />} />
         <Route path="supervision"   element={<Supervision />} />
+        <Route path="commande-telephone" element={<CommandeTelephone />} />
         <Route path="sos"           element={<AlertesSos />} />
         <Route path="suppressions"  element={<Suppressions />} />
         <Route path="envois-colis"  element={<EnvoisColis />} />

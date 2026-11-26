@@ -267,7 +267,7 @@ export default function Supervision() {
             ) : filtered.map(it => (
               <button key={keyOf(it)} className={`sv-item ${selected === keyOf(it) ? 'active' : ''} ${it.alertes?.length ? 'sv-item-alerte' : ''}`} onClick={() => focus(it)}>
                 <div className="sv-item-top">
-                  <span className="sv-kind" style={{ color: SERVICES_DEMANDE[serviceDe(it)].couleur }}>{SERVICES_DEMANDE[serviceDe(it)].emoji} {SERVICES_DEMANDE[serviceDe(it)].libelle} #{it.id}</span>
+                  <span className="sv-kind" style={{ color: SERVICES_DEMANDE[serviceDe(it)].couleur }}>{SERVICES_DEMANDE[serviceDe(it)].emoji} {SERVICES_DEMANDE[serviceDe(it)].libelle} #{it.id}{it.parTelephone ? ' · 📞 par téléphone' : ''}</span>
                   <StatusBadge status={it.status} />
                 </div>
                 <div className="sv-route">

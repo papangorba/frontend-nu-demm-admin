@@ -471,6 +471,7 @@ export default function Finances() {
             {[
               ['ECO_COMMISSION_COVOITURAGE', 'Commission sur le covoiturage', 'Réservations Taxi-Bokko et Allô Sénégal des particuliers (pas les compagnies)'],
               ['ECO_COMMISSION_COLIS', 'Commission sur les colis', "Envois de colis d'Allô Sénégal remis au destinataire"],
+              ['ECO_RETRAIT_AUTO', 'Retraits envoyés automatiquement', "PayTech envoie l'argent sur Wave / Orange Money dès la demande du chauffeur (à activer quand PayTech a ouvert les transferts)"],
             ].map(([k, l, aide]) => (
               <div key={k} className="cp-ligne">
                 <div><b>{l}</b><small className="nd-cell-sub">{aide}</small></div>

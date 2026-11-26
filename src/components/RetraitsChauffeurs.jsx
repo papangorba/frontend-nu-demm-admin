@@ -69,7 +69,7 @@ export default function RetraitsChauffeurs() {
                 <td><b>{r.nom || `#${r.chauffeurId}`}</b><div className="nd-cell-sub"><Phone size={11} /> {joli(r.telephoneCompte)}</div></td>
                 <td><b>{fcfa(r.montant)}</b><div className="nd-cell-sub">solde après : {fcfa(r.soldeActuel)}</div></td>
                 <td>{MOYENS[r.moyen]}<div className="nd-cell-sub" style={{ fontFamily: 'monospace' }}>{joli(r.telephone)}</div></td>
-                <td className="nd-cell-sub">{fmtDT(r.creeLe)}</td>
+                <td className="nd-cell-sub">{fmtDT(r.creeLe)}{r.statut === 'EN_COURS' && <div><span className="badge badge-info">Envoi PayTech en cours</span></div>}</td>
                 <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
                   {habilite && <>
                     <button className="nd-btn nd-btn-primary nd-btn-sm" disabled={busy === r.id} onClick={() => payer(r)}><Send size={14} /> Envoyé</button>{' '}

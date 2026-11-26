@@ -90,14 +90,14 @@ export const Auth = {
   },
   PERMS: {
     SUPER_ADMIN: ['*'],
-    ADMIN:       ['dashboard','supervision','sos','entreprises','chauffeurs','documents','identite','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
-    ADMIN1:      ['dashboard','supervision','sos','chauffeurs','documents','identite','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
-    ADMIN2:      ['dashboard','supervision','sos','documents','identite','commandes','livraisons','envois-colis','litiges','rapports-finance','notifications','publicites','audit'],
+    ADMIN:       ['dashboard','supervision','commande-telephone','sos','entreprises','chauffeurs','documents','identite','clients','comptes-pro','suppressions','sessions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs','controle','regions','admins','audit','settings'],
+    ADMIN1:      ['dashboard','supervision','commande-telephone','sos','chauffeurs','documents','identite','clients','comptes-pro','suppressions','commandes','livraisons','envois-colis','finances','litiges','rapports-finance','trajets','vehicules','reservations','notifications','publicites','contenus','tarifs'],
+    ADMIN2:      ['dashboard','supervision','commande-telephone','sos','documents','identite','commandes','livraisons','envois-colis','litiges','rapports-finance','notifications','publicites','audit'],
     GESTIONNAIRE_FLOTTE: ['mon-entreprise'],
-    MODERATEUR:  ['dashboard','supervision','sos','commandes','livraisons','envois-colis','litiges','notifications'],
+    MODERATEUR:  ['dashboard','supervision','commande-telephone','sos','commandes','livraisons','envois-colis','litiges','notifications'],
     // Rôles du modèle économique (le serveur applique les mêmes limites)
     FINANCE:     ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','audit'],
-    SUPPORT:     ['dashboard','supervision','sos','chauffeurs','clients','commandes','livraisons','envois-colis','reservations','litiges','documents','identite'],
+    SUPPORT:     ['dashboard','supervision','commande-telephone','sos','chauffeurs','clients','commandes','livraisons','envois-colis','reservations','litiges','documents','identite'],
     MARKETING:   ['dashboard','publicites','notifications','contenus','finances','rapports-finance','clients'],
     AUDITEUR:    ['dashboard','finances','litiges','rapports-finance','commandes','livraisons','envois-colis','reservations','chauffeurs','clients','audit','identite'],
   },
@@ -189,6 +189,11 @@ export const apiCommandes = {
   /** Annulation par l'admin : statut ANNULEE + client et chauffeur notifiés. */
   annuler: id      => del(EP.COMMANDE(id)),
   attente: ()      => get(EP.COMMANDES_ATT),
+  /** Course prise au téléphone par le service client (SMS au client dès qu'un chauffeur accepte) */
+  parTelephone: d  => post('/api/admin/commandes/telephone', d),
+  estimation: ({ vehicule, depart, arrivee, distanceKm }) => get(`/api/public/tarifs/estimation?categorie=COURSE&vehicule=${vehicule}`
+    + `&latDepart=${depart.lat}&lngDepart=${depart.lng}&latArrivee=${arrivee.lat}&lngArrivee=${arrivee.lng}`
+    + (distanceKm ? `&distanceKm=${distanceKm.toFixed(1)}` : '')),
 };
 
 // ─── Pubs, annonces et textes des apps ───────────────────────
