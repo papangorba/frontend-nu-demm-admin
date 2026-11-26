@@ -8,7 +8,7 @@ import { useToast, useTheme } from '../context/AppContext';
 import CarteGenerale from '../components/CarteGenerale';
 import FicheUtilisateur from '../components/FicheUtilisateur';
 import { iconeVehicule, iconeDemande, iconeDrapeau, libelleVehicule, SENEGAL, SERVICES_DEMANDE, serviceDe } from '../components/carteIcones';
-import { useRegions, SelectZone, CadrerZone, Legende } from '../components/FiltreZone';
+import { useRegions, SelectZone, CadrerZone, Legende, GlisserPaveTactile } from '../components/FiltreZone';
 
 const REFRESH_MS = 5000;
 
@@ -299,6 +299,7 @@ export default function Supervision() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
             <CadrerZone zone={zone} regions={regions} jeton={jetonZone} />
+            <GlisserPaveTactile />
             <FitTo points={fitPoints} token={fitToken} />
 
             {/* Trajet de la sélection : prise en charge → destination */}

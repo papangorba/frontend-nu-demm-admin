@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Marker, Rectangle, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { iconeVehicule, iconePersonne, libelleVehicule, SENEGAL, bornesRegion } from './carteIcones';
-import { CadrerZone, Legende } from './FiltreZone';
+import { CadrerZone, Legende, GlisserPaveTactile } from './FiltreZone';
 import { apiFiche, fmtDT } from '../services/api';
 import { MiniCard, Spinner } from './ui';
 import { useToast, useTheme } from '../context/AppContext';
@@ -189,6 +189,7 @@ export default function CarteGenerale({ zone = '', regions = [], jetonZone = 0 }
             />
             <Voler cible={cible} />
             <CadrerZone zone={zone} regions={regions} jeton={jetonZone} />
+            <GlisserPaveTactile />
             <SuiviZoom onZoom={setZoom} />
 
             {/* Zones où il manque des chauffeurs */}

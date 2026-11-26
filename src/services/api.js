@@ -472,6 +472,17 @@ export const apiLivraisons = {
   annuler: id => del(EP.LIVRAISON(id)),
 };
 
+/** Historique complet (trajets passés, toutes les réservations, véhicules et propriétaires) */
+export const apiHistorique = {
+  trajets:      ()            => get('/api/admin/trajets'),
+  reservations: ()            => get('/api/admin/reservations'),
+  vehicules:    ()            => get('/api/admin/vehicules'),
+  /** Créer / modifier le véhicule d'un chauffeur */
+  vehiculeChauffeur: (id, d)  => put(`/api/admin/chauffeurs/${id}/vehicule`, d),
+  /** Associer un véhicule existant à un chauffeur (null = détacher) */
+  associer: (vehiculeId, chauffeurId) => put(`/api/admin/vehicules/${vehiculeId}/chauffeur`, { chauffeurId }),
+};
+
 export const apiReservations = {
   byTrajet: id => get(EP.RESA_TRAJET(id)),
   byClient: id => get(EP.RESA_CLIENT(id)),

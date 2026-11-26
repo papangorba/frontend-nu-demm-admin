@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiUsers, apiFiche, apiVehicules, serviceIcon, serviceDuVehicule, categorieService, fmtDate, fmtDT, Audit } from '../services/api';
+import { apiUsers, apiFiche, apiHistorique, serviceIcon, serviceDuVehicule, categorieService, fmtDate, fmtDT, Audit } from '../services/api';
 import FicheUtilisateur, { BadgeInactivite, ilYa, joursInactif } from '../components/FicheUtilisateur';
 import { Avatar, MiniCard, Modal, EmptyRow, LoadingRow, usePagination } from '../components/ui';
 import useAuChargement from '../hooks/useAuChargement';
@@ -19,6 +19,10 @@ export default function Chauffeurs() {
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ prenom:'',nom:'',telephone:'',password:'',email:'',typeService:'MOTO_2_ROUES',numeroPermis:'',dateExpirationPermis:'' });
+  // Véhicule du chauffeur (créé ou modifié avec la fiche)
+  const VIDE_V = { type:'', marque:'', modele:'', couleur:'', anneeFabrication:'', numeroImmatriculation:'' };
+  const [veh, setVeh] = useState(VIDE_V);
+  const [vehInitial, setVehInitial] = useState(VIDE_V);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
 
@@ -39,10 +43,10 @@ export default function Chauffeurs() {
     setLoading(true);
     try {
       // Le service se lit sur le véhicule déclaré dans l'app (le champ du compte est souvent vide)
-      const [chauffeurs, vehicules] = await Promise.all([apiUsers.chauffeurs(), apiVehicules.all().catch(() => [])]);
+      const [chauffeurs, vehicules] = await Promise.all([apiUsers.chauffeurs(), apiHistorique.vehicules().catch(() => [])]);
       const parChauffeur = {};
       (vehicules || []).forEach(v => {
-        const proprio = v.user?.id ?? v.userId;
+        const proprio = v.proprietaire?.id;
         if (proprio != null && !parChauffeur[proprio]) parChauffeur[proprio] = v;
       });
       // Les chauffeurs d'une entreprise de transport sont dans le dossier de leur entreprise, pas ici
@@ -74,7 +78,11 @@ export default function Chauffeurs() {
       const [prenom,...rest] = (item.name||'').split(' ');
       // Noms des champs du backend : numeroDePermis / dateExpirationDuPermis
       setForm({ prenom, nom:rest.join(' '), telephone:item.telephone||'', password:'', email:item.email||'', typeService:item.typeService||'MOTO_2_ROUES', numeroPermis:item.numeroDePermis||'', dateExpirationPermis:item.dateExpirationDuPermis||'' });
+      const v = item.vehicule || {};
+      const init = { type:v.type||'', marque:v.marque||'', modele:v.modele||'', couleur:v.couleur||'', anneeFabrication:v.anneeFabrication||'', numeroImmatriculation:v.numeroImmatriculation||'' };
+      setVeh(init); setVehInitial(init);
     } else {
+      setVeh(VIDE_V); setVehInitial(VIDE_V);
       setForm({ prenom:'',nom:'',telephone:'',password:'',email:'',typeService:'MOTO_2_ROUES',numeroPermis:'',dateExpirationPermis:'' });
     }
     setModal(true);
@@ -90,8 +98,13 @@ export default function Chauffeurs() {
         numeroDePermis: form.numeroPermis,
         dateExpirationDuPermis: form.dateExpirationPermis,
       };
+      const vehModifie = JSON.stringify(veh) !== JSON.stringify(vehInitial) && (veh.type || veh.numeroImmatriculation);
       if (editId) {
         await apiUsers.update(editId, { name, telephone:form.telephone, ...profil });
+        if (vehModifie) {
+          await apiHistorique.vehiculeChauffeur(editId, veh);
+          Audit.log('VEHICULE_CHAUFFEUR', `Chauffeur #${editId} : ${veh.type} ${veh.numeroImmatriculation}`);
+        }
         toast('Chauffeur modifié','success');
         Audit.log('UPDATE_CHAUFFEUR',`Chauffeur #${editId} modifié`);
       } else {
@@ -101,6 +114,7 @@ export default function Chauffeurs() {
           numeroDePermis:form.numeroPermis, dateExpirationDuPermis:form.dateExpirationPermis,
         });
         if (res?.userId) await apiUsers.update(res.userId, profil);
+        if (res?.userId && vehModifie) await apiHistorique.vehiculeChauffeur(res.userId, veh);
         toast('Chauffeur créé','success');
         Audit.log('CREATE_CHAUFFEUR',`Chauffeur ${name} créé`);
       }
@@ -186,9 +200,9 @@ export default function Chauffeurs() {
         <div className="nd-card-body-p0">
           <div className="nd-table-wrap">
             <table className="nd-table">
-              <thead><tr><th>#ID</th><th>Chauffeur</th><th>Téléphone</th><th>Type Service</th><th>N° Permis</th><th>Exp. Permis</th><th>Compte</th><th>Inscrit le</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+              <thead><tr><th>#ID</th><th>Chauffeur</th><th>Téléphone</th><th>Type Service</th><th>Véhicule</th><th>N° Permis</th><th>Exp. Permis</th><th>Compte</th><th>Inscrit le</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
               <tbody>
-                {loading ? <LoadingRow cols={10}/> : !filtered.length ? <EmptyRow cols={10} msg="Aucun chauffeur trouvé"/> :
+                {loading ? <LoadingRow cols={11}/> : !filtered.length ? <EmptyRow cols={11} msg="Aucun chauffeur trouvé"/> :
                   lignesPage.map(c => (
                     <tr key={c.id} style={{opacity: c.compteActif === false ? .6 : 1}}>
                       <td className="nd-table-id">#{c.id}</td>
@@ -201,6 +215,11 @@ export default function Chauffeurs() {
                             <small className="nd-cell-sub">{categorieService(c.service)}{c.vehicule ? ` · ${[c.vehicule.marque, c.vehicule.modele].filter(Boolean).join(' ')}${c.vehicule.numeroImmatriculation ? ` · ${c.vehicule.numeroImmatriculation}` : ''}` : ''}</small>
                           </div>
                         </div> : <span className="nd-badge badge-secondary">Aucun véhicule</span>}</td>
+                      <td>{c.vehicule ? <>
+                          <code style={{fontSize:12,fontWeight:700}}>{c.vehicule.numeroImmatriculation||'—'}</code>
+                          <div className="nd-cell-sub">{[c.vehicule.marque, c.vehicule.modele].filter(Boolean).join(' ')}{c.vehicule.couleur ? ` · ${c.vehicule.couleur}` : ''}{c.vehicule.anneeFabrication ? ` · ${c.vehicule.anneeFabrication}` : ''}</div>
+                          <div className="nd-cell-sub">Véhicule #{c.vehicule.id}{c.vehicule.creeLe ? ` · depuis le ${fmtDate(c.vehicule.creeLe)}` : ''}</div>
+                        </> : <button className="nd-btn nd-btn-outline nd-btn-sm" onClick={()=>openModal(c)}>+ Véhicule</button>}</td>
                       <td><small>{c.numeroDePermis||'—'}</small></td>
                       <td><small className="nd-cell-sub">{fmtDate(c.dateExpirationDuPermis)}</small></td>
                       <td>{c.compteActif === false
@@ -248,6 +267,24 @@ export default function Chauffeurs() {
         </select>
         {inp('numeroPermis',{placeholder:'Numéro de permis'})}
         <div className="nd-form-group"><label>Date expiration permis</label>{inp('dateExpirationPermis',{type:'date'})}</div>
+
+        {/* Véhicule du chauffeur : mêmes contrôles que dans l'app (plaque DK-1234-AB, marque connue) */}
+        <div style={{borderTop:'1px solid var(--nd-border, #e5e7eb)', margin:'6px 0 2px', paddingTop:12}}>
+          <b>🚘 Véhicule</b> <small className="nd-cell-sub">{vehInitial.numeroImmatriculation ? '(modifier)' : '(facultatif : laisser vide si pas encore de véhicule)'}</small>
+        </div>
+        <select className="nd-input nd-select" value={veh.type} onChange={e=>setVeh(v=>({...v,type:e.target.value}))}>
+          <option value="">— Type de véhicule —</option>
+          {['Voiture course','Taxi-Bokko','Moto-taxi (Jakarta)','Moto 2 roues','Moto 3 roues','Fourgonnette','Camion'].concat(veh.type && !['Voiture course','Taxi-Bokko','Moto-taxi (Jakarta)','Moto 2 roues','Moto 3 roues','Fourgonnette','Camion'].includes(veh.type) ? [veh.type] : []).map(t=><option key={t} value={t}>{t}</option>)}
+        </select>
+        <div className="nd-form-row">
+          <input className="nd-input" placeholder="Marque (ex. Toyota)" value={veh.marque} onChange={e=>setVeh(v=>({...v,marque:e.target.value}))} />
+          <input className="nd-input" placeholder="Modèle (ex. Corolla)" value={veh.modele} onChange={e=>setVeh(v=>({...v,modele:e.target.value}))} />
+        </div>
+        <div className="nd-form-row">
+          <input className="nd-input" placeholder="Immatriculation (DK-1234-AB)" value={veh.numeroImmatriculation} onChange={e=>setVeh(v=>({...v,numeroImmatriculation:e.target.value.toUpperCase()}))} />
+          <input className="nd-input" placeholder="Couleur" value={veh.couleur} onChange={e=>setVeh(v=>({...v,couleur:e.target.value}))} />
+          <input className="nd-input" placeholder="Année" inputMode="numeric" value={veh.anneeFabrication} onChange={e=>setVeh(v=>({...v,anneeFabrication:e.target.value}))} />
+        </div>
         {err && <div className="nd-alert nd-alert-danger">⚠ {err}</div>}
       </Modal>
 

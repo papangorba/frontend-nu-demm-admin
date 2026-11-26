@@ -41,6 +41,33 @@ export function CadrerZone({ zone, regions, jeton = 0 }) {
 }
 
 /** Légende fixe en bas à gauche de la carte */
+/**
+ * Pavé tactile d'ordinateur portable : glisser deux doigts à gauche / à droite déplace la carte
+ * (Leaflet, lui, ne fait que zoomer à la molette). Haut / bas : zoom, comme avant ; Maj + molette : gauche / droite.
+ */
+export function GlisserPaveTactile() {
+  const map = useMap();
+  useEffect(() => {
+    const carte = map.getContainer();
+    const parent = carte.parentElement;
+    if (!parent) return undefined;
+    const surMolette = e => {
+      if (!carte.contains(e.target) || e.ctrlKey) return; // Ctrl + molette / pincement : zoom de Leaflet
+      const dx = e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX;
+      const dy = e.shiftKey && !e.deltaX ? 0 : e.deltaY;
+      if (Math.abs(dx) <= Math.abs(dy)) return; // geste surtout vertical : zoom habituel
+      e.preventDefault();
+      e.stopPropagation();
+      const k = e.deltaMode === 1 ? 16 : 1; // lignes → pixels
+      map.panBy([dx * k, dy * k], { animate: false });
+    };
+    // Écoute avant Leaflet (phase de capture, sur le parent)
+    parent.addEventListener('wheel', surMolette, { capture: true, passive: false });
+    return () => parent.removeEventListener('wheel', surMolette, { capture: true });
+  }, [map]);
+  return null;
+}
+
 export function Legende({ demandes = false }) {
   const ligne = (couleur, texte, forme = 'rond') => (
     <div className="cv-legende-ligne">
@@ -48,7 +75,7 @@ export function Legende({ demandes = false }) {
     </div>
   );
   return (
-    <details className="cv-legende" open>
+    <details className="cv-legende" open={typeof window === 'undefined' || window.innerWidth > 700}>
       <summary>Légende</summary>
       {ligne(COULEURS_ETAT.EN_LIGNE, 'Chauffeur libre', 'anneau')}
       {ligne(COULEURS_ETAT.OCCUPE, 'En course', 'anneau')}

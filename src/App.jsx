@@ -45,9 +45,11 @@ const EntProfil = lazy(() => import('./pages/entreprise/Profil'));
 const EntTrajets = lazy(() => import('./pages/entreprise/Trajets'));
 const autres = () => import('./pages/OtherPages');
 const Livraisons = lazy(() => autres().then(m => ({ default: m.Livraisons })));
-const Trajets = lazy(() => autres().then(m => ({ default: m.Trajets })));
-const Vehicules = lazy(() => autres().then(m => ({ default: m.Vehicules })));
-const Reservations = lazy(() => autres().then(m => ({ default: m.Reservations })));
+// Historique complet (passés compris) : pages refaites le 26/11
+const historique = () => import('./pages/Historique');
+const Trajets = lazy(() => historique().then(m => ({ default: m.Trajets })));
+const Vehicules = lazy(() => historique().then(m => ({ default: m.Vehicules })));
+const Reservations = lazy(() => historique().then(m => ({ default: m.Reservations })));
 const Admins = lazy(() => autres().then(m => ({ default: m.Admins })));
 const AuditLog = lazy(() => autres().then(m => ({ default: m.AuditLog })));
 const Settings = lazy(() => autres().then(m => ({ default: m.Settings })));
