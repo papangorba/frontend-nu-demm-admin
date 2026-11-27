@@ -331,6 +331,8 @@ export const apiFiche = {
 export const apiAdmin = {
   /** Indicateurs clés + courbe des 14 derniers jours (calculés côté serveur). */
   dashboard: () => get(EP.ADMIN_DASHBOARD),
+  /** Modules récents : covoiturage, réservations, argent en ligne, véhicules, téléphone, prix, à régler */
+  modules:   () => get('/api/admin/dashboard/modules'),
   /** Courses / livraisons en attente ou en cours avec position du chauffeur. */
   live:      () => get(EP.ADMIN_LIVE),
   /** cible : CLIENTS | CHAUFFEURS | TOUS | UTILISATEUR (avec userId). */

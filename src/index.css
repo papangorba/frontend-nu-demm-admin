@@ -1087,3 +1087,10 @@ h1,h2,h3,.nd-page-title,.nd-card-title,.nd-brand-name,.nd-welcome-title,.nd-logi
 .pm-ligne:last-child { border-bottom:none; }
 .pm-libelle { flex:1; min-width:220px; }
 .pm-cle { font-size:10.5px; color:var(--nd-text-dim); font-family:monospace; }
+
+/* Tableau de bord : cartes cliquables et liste « À régler » */
+.db-tuile-lien { text-decoration:none; color:inherit; display:block; }
+.db-tuile-lien .nd-stat-card { height:100%; transition:transform .15s ease, box-shadow .15s ease; }
+.db-tuile-lien:hover .nd-stat-card { transform:translateY(-2px); box-shadow:0 6px 18px rgba(0,0,0,.08); }
+.db-a-regler { display:grid; gap:8px; }
+.db-a-regler .nd-alert { cursor:pointer; }
