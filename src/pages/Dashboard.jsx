@@ -7,7 +7,7 @@ import {
 import { Doughnut, Line } from 'react-chartjs-2';
 import { apiAdmin, apiCommandes, apiFiche, fmtDT, money, Audit } from '../services/api';
 import { StatCard, StatusBadge, Spinner, KpiRow } from '../components/ui';
-import { Wallet, Car, Package, UserPlus, Navigation, Hourglass, Bike, Users, PhoneCall, CarFront, Ticket, Send, BadgeDollarSign, IdCard, MapPinned } from 'lucide-react';
+import { Wallet, Car, Package, UserPlus, Navigation, Hourglass, Bike, Users, BadgeDollarSign, Send } from 'lucide-react';
 import { useToast, useAuth, useTheme } from '../context/AppContext';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
@@ -17,21 +17,6 @@ const STATUS_COLORS = {
   LIVREE: '#22c55e', ANNULEE: '#ef4444', EXPIREE: '#64748b',
 };
 const fmt = n => (n ?? 0).toLocaleString('fr-FR');
-const RUBRIQUES = [
-  ['PARTICULIER', 'Taxi-Bokko', '🚕', 'c-teal'],
-  ['BUS', 'Bus (entreprises)', '🚌', 'c-blue'],
-  ['ALLO', 'Allô Sénégal', '🚐', 'c-orange'],
-];
-const NIVEAUX_ALERTE = { urgent: 'nd-alert-danger', important: 'nd-alert-warn', info: 'nd-alert-info' };
-
-/** Carte chiffrée cliquable (ouvre la page du module) */
-function Tuile({ to, color, icon, value, label }) {
-  return (
-    <Link to={to} className="db-tuile-lien" title="Ouvrir la page">
-      <StatCard color={color} icon={icon} value={value} label={label} />
-    </Link>
-  );
-}
 
 export default function Dashboard() {
   const toast = useToast();
@@ -48,13 +33,14 @@ export default function Dashboard() {
 
   const [activiteComptes, setActiviteComptes] = useState(null);
   const [statsPrix, setStatsPrix] = useState(null);
-  const [mod, setMod] = useState(null);
+  const [argent, setArgent] = useState(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const [dash, cmds, act, prix, modules] = await Promise.allSettled([apiAdmin.dashboard(), apiCommandes.all(), apiFiche.activite(), apiFiche.statsPrix(), apiAdmin.modules()]);
-      if (modules.status === 'fulfilled') setMod(modules.value);
+      // Seulement la partie finance des modules (paiements en ligne, recharges, retraits, remboursements)
+      if (modules.status === 'fulfilled') setArgent(modules.value?.argent || null);
       if (act.status === 'fulfilled') setActiviteComptes(act.value);
       if (prix.status === 'fulfilled') setStatsPrix(prix.value);
       if (dash.status === 'fulfilled') setD(dash.value);
@@ -98,6 +84,15 @@ export default function Dashboard() {
     labels: activite.labels,
     datasets: [{ label: 'Revenus (FCFA)', data: jours.map(j => j.revenus), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.15)', fill: true, tension: .35, pointRadius: 3 }],
   };
+  const joursArgent = argent?.jours || [];
+  const courbeArgent = {
+    labels: joursArgent.map(j => new Date(j.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })),
+    datasets: [
+      { label: 'Payé en ligne par les clients', data: joursArgent.map(j => j.clients), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.12)', fill: true, tension: .35, pointRadius: 3 },
+      { label: 'Recharges des chauffeurs', data: joursArgent.map(j => j.recharges), borderColor: cViolet, backgroundColor: 'transparent', tension: .35, pointRadius: 3 },
+      { label: 'Retraits envoyés', data: joursArgent.map(j => j.retraits), borderColor: '#f59e0b', backgroundColor: 'transparent', tension: .35, pointRadius: 3, borderDash: [5, 4] },
+    ],
+  };
   const statuts = Object.entries(c.parStatut || {});
   const donut = {
     labels: statuts.map(([s]) => s),
@@ -138,18 +133,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {mod?.aRegler?.length > 0 && (
-            <div className="db-a-regler" style={{ marginBottom: 18 }}>
-              {mod.aRegler.map(a => (
-                <Link key={a.texte} to={a.lien} className={`nd-alert ${NIVEAUX_ALERTE[a.niveau] || 'nd-alert-info'}`} style={{ textDecoration: 'none' }}>
-                  <span>{a.niveau === 'urgent' ? '🚨' : a.niveau === 'important' ? '⚠' : 'ℹ'}</span>
-                  <span style={{ flex: 1 }}>{a.texte}</span>
-                  <span>Régler →</span>
-                </Link>
-              ))}
-            </div>
-          )}
-
           {/* Aujourd'hui */}
           <div className="db-section-title">Aujourd'hui</div>
           <div className="nd-stat-grid" style={{ marginBottom: 22 }}>
@@ -168,61 +151,19 @@ export default function Dashboard() {
             <StatCard color="c-teal"   icon={<Users color="var(--nd-teal)" />} value={fmt(u.clients)} label={`Clients${u.suspendus ? ` · ${u.suspendus} suspendu(s)` : ''}`} />
           </div>
 
-          {mod?.covoiturage && <>
-            <div className="db-section-title">Covoiturage et réservations · trajets à venir</div>
-            <div className="nd-stat-grid" style={{ marginBottom: 10 }}>
-              {RUBRIQUES.map(([k, nom, emoji, couleur]) => {
-                const r = mod.covoiturage.parRubrique?.[k] || {};
-                const resa = mod.reservations?.aVenir?.[k] ?? 0;
-                return (
-                  <Tuile key={k} to="/trajets" color={couleur} icon={<span style={{ fontSize: 22 }}>{emoji}</span>}
-                    value={fmt(r.visibles)}
-                    label={`${nom} · ${fmt(r.places)} place(s) libre(s) · ${fmt(resa)} réservation(s)${r.caches ? ` · ⚠ ${fmt(r.caches)} caché(s)` : ''}`} />
-                );
-              })}
-              <Tuile to="/reservations" color="c-purple" icon={<Ticket color="var(--nd-purple)" />}
-                value={fmt(mod.reservations?.aujourdhui)}
-                label={`Réservations du jour · ${fmt(mod.reservations?.embarquesAujourdhui)} embarqué(s) · ${fmt(mod.covoiturage.departsAujourdhui)} départ(s) aujourd'hui`} />
-            </div>
-            {(mod.covoiturage.entreprisesBientot > 0 || mod.covoiturage.abonnementExpire > 0) && (
-              <div className="nd-alert nd-alert-warn" style={{ marginBottom: 22 }}>
-                <span>🏢</span>
-                <span style={{ flex: 1 }}>
-                  {mod.covoiturage.abonnementExpire > 0 && <>{fmt(mod.covoiturage.abonnementExpire)} trajet(s) d'entreprise caché(s) : abonnement expiré. </>}
-                  {mod.covoiturage.entreprisesBientot > 0 && <>{fmt(mod.covoiturage.entreprisesBientot)} abonnement(s) d'entreprise expirent dans les 7 jours.</>}
-                </span>
-                <Link to="/entreprises" className="nd-btn nd-btn-outline nd-btn-sm">Entreprises →</Link>
-              </div>
-            )}
-          </>}
-
-          {mod?.argent && <>
-            <div className="db-section-title">Argent en ligne {mod.argent.paiementEnLigne ? '' : '· paiement en ligne fermé'}</div>
+          {/* Argent en ligne (Wave / Orange Money) */}
+          {argent && <>
+            <div className="db-section-title">Argent en ligne{argent.paiementEnLigne ? '' : ' · paiement en ligne fermé'}</div>
             <div className="nd-stat-grid" style={{ marginBottom: 22 }}>
-              <Tuile to="/finances" color="c-green" icon={<Wallet color="var(--nd-green)" />} value={`${fmt(mod.argent.montantAujourdhui)} F`}
-                label={`Payé en ligne aujourd'hui · ${fmt(mod.argent.payesAujourdhui)} paiement(s)${mod.argent.echecsAujourdhui ? ` · ${fmt(mod.argent.echecsAujourdhui)} échec(s)` : ''}`} />
-              <Tuile to="/finances" color="c-teal" icon={<BadgeDollarSign color="var(--nd-teal)" />} value={`${fmt(mod.argent.montantMois)} F`}
-                label={`Payé en ligne ce mois · dont ${fmt(mod.argent.rechargesMois)} F de recharges chauffeurs`} />
-              <Tuile to="/finances" color={mod.argent.retraitsATraiter ? 'c-amber' : 'c-blue'} icon={<Send color={mod.argent.retraitsATraiter ? 'var(--nd-amber)' : 'var(--nd-blue)'} />}
-                value={fmt(mod.argent.retraitsATraiter + mod.argent.retraitsEnCours)}
-                label={`Retraits à envoyer (${fmt(mod.argent.montantRetraits)} F)${mod.argent.retraitsEnCours ? ` · ${fmt(mod.argent.retraitsEnCours)} en cours PayTech` : ''} · envoi ${mod.argent.retraitsAuto ? 'automatique' : 'par l\'équipe'}`} />
-              <Tuile to="/litiges" color="c-purple" icon={<Hourglass color="var(--nd-purple)" />} value={fmt(mod.argent.remboursementsEnCours)}
+              <StatCard color="c-green" icon={<Wallet color="var(--nd-green)" />} value={`${fmt(argent.montantAujourdhui)} F`}
+                label={`Payé en ligne aujourd'hui · ${fmt(argent.payesAujourdhui)} paiement(s)${argent.echecsAujourdhui ? ` · ${fmt(argent.echecsAujourdhui)} échec(s)` : ''}`} />
+              <StatCard color="c-teal" icon={<BadgeDollarSign color="var(--nd-teal)" />} value={`${fmt(argent.montantMois)} F`}
+                label={`Payé en ligne ce mois · dont ${fmt(argent.rechargesMois)} F de recharges chauffeurs`} />
+              <StatCard color={argent.retraitsATraiter ? 'c-amber' : 'c-blue'} icon={<Send color={argent.retraitsATraiter ? 'var(--nd-amber)' : 'var(--nd-blue)'} />}
+                value={fmt((argent.retraitsATraiter || 0) + (argent.retraitsEnCours || 0))}
+                label={`Retraits à envoyer (${fmt(argent.montantRetraits)} F) · envoi ${argent.retraitsAuto ? 'automatique' : "par l'équipe"}`} />
+              <StatCard color="c-purple" icon={<Hourglass color="var(--nd-purple)" />} value={fmt(argent.remboursementsEnCours)}
                 label="Remboursements en cours" />
-            </div>
-          </>}
-
-          {(mod?.vehicules || mod?.telephone || mod?.prix) && <>
-            <div className="db-section-title">Flotte, service client et prix</div>
-            <div className="nd-stat-grid" style={{ marginBottom: 22 }}>
-              {mod.vehicules && <Tuile to="/vehicules" color="c-blue" icon={<CarFront color="var(--nd-blue)" />} value={fmt(mod.vehicules.total)}
-                label={`Véhicules · +${fmt(mod.vehicules.ajoutes7j)} en 7 j${mod.vehicules.sansProprietaire ? ` · ${fmt(mod.vehicules.sansProprietaire)} sans propriétaire` : ''}`} />}
-              {mod.vehicules && <Tuile to="/chauffeurs" color={mod.vehicules.documentsAValider ? 'c-amber' : 'c-orange'} icon={<IdCard color="var(--nd-orange)" />}
-                value={fmt(mod.vehicules.chauffeursSansVehicule)}
-                label={`Chauffeurs sans véhicule · ${fmt(mod.vehicules.documentsAValider)} document(s) à valider${mod.vehicules.documentsExpires ? ` · ${fmt(mod.vehicules.documentsExpires)} expiré(s)` : ''}`} />}
-              {mod.telephone && <Tuile to="/commande-telephone" color="c-cyan" icon={<PhoneCall color="var(--nd-cyan)" />} value={fmt(mod.telephone.sept)}
-                label={`Commandes par téléphone (7 j) · ${fmt(mod.telephone.servies7j)} servie(s) · ${fmt(mod.telephone.aujourdhui)} aujourd'hui${mod.telephone.enAttente ? ` · ${fmt(mod.telephone.enAttente)} en attente` : ''}`} />}
-              {mod.prix && <Tuile to="/tarifs" color="c-purple" icon={<MapPinned color="var(--nd-purple)" />} value={fmt(mod.prix.regionsAjustees + mod.prix.regionsGrillePropre)}
-                label={`Régions aux prix ajustés · ${fmt(mod.prix.grillesPropres)} grille(s) propre(s) · majorations : ${mod.prix.majorations?.length ? mod.prix.majorations.join(', ') : 'aucune'}`} />}
             </div>
           </>}
 
@@ -284,6 +225,16 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {argent && (
+            <div className="nd-card" style={{ marginTop: 20 }}>
+              <div className="nd-card-header">
+                <span className="nd-card-title">Argent en ligne — 14 derniers jours</span>
+                <Link to="/finances" className="nd-btn nd-btn-ghost nd-btn-sm">Finances →</Link>
+              </div>
+              <div className="nd-card-body"><div style={{ height: 240 }}><Line data={courbeArgent} options={lineOpts} /></div></div>
+            </div>
+          )}
+
           <div className="nd-grid-2" style={{ marginTop: 20 }}>
             {/* Dernières commandes */}
             <div className="nd-card">
@@ -343,11 +294,6 @@ export default function Dashboard() {
               <div className="db-actions">
                 {[
                   { to: '/supervision', icon: '🛰', label: 'Carte en direct' },
-                  { to: '/commande-telephone', icon: '📞', label: 'Commande par téléphone' },
-                  { to: '/trajets', icon: '🚌', label: 'Trajets à venir' },
-                  { to: '/reservations', icon: '🎫', label: 'Réservations' },
-                  { to: '/tarifs', icon: '💰', label: 'Tarifs et régions' },
-                  { to: '/settings', icon: '⚙', label: 'Paramètres' },
                   { to: '/notifications', icon: '🔔', label: 'Envoyer une notification' },
                   { to: '/chauffeurs', icon: '🏍', label: 'Gérer les chauffeurs' },
                   { to: '/clients', icon: '👤', label: 'Gérer les clients' },
