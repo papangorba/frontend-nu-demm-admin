@@ -25,6 +25,29 @@ function Onglets({ valeur, onChange, options }) {
   );
 }
 
+/** Rubrique de l'app client (même calcul que le serveur) */
+const CATEGORIES = {
+  PARTICULIER: ['🚕', 'Taxi-Bokko', '#0E9384'],
+  BUS: ['🚌', 'Bus (entreprises)', '#1570EF'],
+  ALLO: ['🚐', 'Allô Sénégal', '#DC6803'],
+};
+const BadgeCategorie = ({ c }) => {
+  const [i, l, couleur] = CATEGORIES[c] || ['❔', c || '—', '#667085'];
+  return <span className="nd-badge" style={{ background: `${couleur}1a`, color: couleur, whiteSpace: 'nowrap' }}>{i} {l}</span>;
+};
+/** Filtre Toutes / Taxi-Bokko / Bus / Allô Sénégal, avec le nombre de lignes */
+function FiltreCategorie({ valeur, onChange, lignes }) {
+  const n = k => lignes.filter(x => x.categorie === k).length;
+  return (
+    <div className="sv-chips" style={{ padding: '0 0 10px' }}>
+      <button type="button" className={`sv-chip ${!valeur ? 'active' : ''}`} onClick={() => onChange('')}>Toutes rubriques ({lignes.length})</button>
+      {Object.entries(CATEGORIES).map(([k, [i, l]]) => (
+        <button key={k} type="button" className={`sv-chip ${valeur === k ? 'active' : ''}`} onClick={() => onChange(k)}>{i} {l} ({n(k)})</button>
+      ))}
+    </div>
+  );
+}
+
 const PAIEMENT = {
   PAYE: ['badge-success', 'Avance payée'],
   EN_ATTENTE: ['badge-warn', 'Avance à payer'],
@@ -43,6 +66,8 @@ export function Trajets() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [periode, setPeriode] = useState('A_VENIR');
+  const [categorie, setCategorie] = useState('');
+  const [masques, setMasques] = useState(false);
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const vide = { chauffeurId: '', lieuDepart: '', lieuDestination: '', dateHeureDepart: '', nombrePlacesTotal: '', prixParPlace: '', statut: 'ACTIF' };
@@ -65,11 +90,13 @@ export function Trajets() {
     : p === 'A_VENIR' ? !t.passe && !arrete(t)
     : p === 'PASSES' ? t.passe && !arrete(t)
     : arrete(t);
-  const filtered = all.filter(t => dansPeriode(t) && contient(q, t.id, t.lieuDepart, t.lieuDestination, t.nomChauffeur, t.telephone, t.entreprise, t.vehicule?.numeroImmatriculation));
+  const filtered = all.filter(t => dansPeriode(t) && (!categorie || t.categorie === categorie) && (!masques || !t.visibleApp) && contient(q, t.id, t.lieuDepart, t.lieuDestination, t.nomChauffeur, t.telephone, t.entreprise, t.vehicule?.numeroImmatriculation));
   // Trajets à venir : le plus proche d'abord ; historique : le plus récent d'abord
   const tries = periode === 'A_VENIR' ? [...filtered].sort((a, b) => String(a.dateHeureDepart).localeCompare(String(b.dateHeureDepart))) : filtered;
   const { visibles, barre } = usePagination(tries);
-  const compte = k => all.filter(t => dansPeriode(t, k)).length;
+  const compte = k => all.filter(t => dansPeriode(t, k) && (!categorie || t.categorie === categorie)).length;
+  // Trajets à venir que les clients ne voient pas (abonnement expiré, complet…)
+  const caches = all.filter(t => dansPeriode(t, 'A_VENIR') && !t.visibleApp && (!categorie || t.categorie === categorie)).length;
 
   const openModal = (item = null) => {
     setEditId(item?.id || null); setErr('');
@@ -116,15 +143,26 @@ export function Trajets() {
       </div>
       <Onglets valeur={periode} onChange={setPeriode} options={[
         ['A_VENIR', `À venir (${compte('A_VENIR')})`], ['PASSES', `Historique (${compte('PASSES')})`],
-        ['ANNULES', `Annulés (${compte('ANNULES')})`], ['TOUS', `Tous (${all.length})`]]} />
+        ['ANNULES', `Annulés (${compte('ANNULES')})`], ['TOUS', `Tous (${all.filter(t => !categorie || t.categorie === categorie).length})`]]} />
+      <FiltreCategorie valeur={categorie} onChange={setCategorie} lignes={all.filter(t => dansPeriode(t))} />
+      {periode === 'A_VENIR' && caches > 0 && (
+        <div className="nd-alert nd-alert-warn" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span>⚠ <b>{caches}</b> trajet(s) à venir ne sont pas visibles par les clients (abonnement expiré, complet…).</span>
+          <button type="button" className="nd-btn nd-btn-outline nd-btn-sm" onClick={() => setMasques(m => !m)}>{masques ? 'Voir tous les trajets' : 'Voir lesquels'}</button>
+        </div>
+      )}
       <div className="nd-card"><div className="nd-card-body-p0"><div className="nd-table-wrap">
         <table className="nd-table">
-          <thead><tr><th>#</th><th>Chauffeur / entreprise</th><th>Trajet</th><th>Départ</th><th>Véhicule</th><th>Places</th><th>Réservations</th><th>Prix/place</th><th>Statut</th><th>Actions</th></tr></thead>
+          <thead><tr><th>#</th><th>Dans l'app</th><th>Chauffeur / entreprise</th><th>Trajet</th><th>Départ</th><th>Véhicule</th><th>Places</th><th>Réservations</th><th>Prix/place</th><th>Statut</th><th>Actions</th></tr></thead>
           <tbody>
-            {loading ? <LoadingRow cols={10} /> : !filtered.length ? <EmptyRow cols={10} msg="Aucun trajet" /> :
+            {loading ? <LoadingRow cols={11} /> : !filtered.length ? <EmptyRow cols={11} msg="Aucun trajet" /> :
               visibles.map(t => (
                 <tr key={t.id}>
                   <td className="nd-table-id">#{t.id}</td>
+                  <td><BadgeCategorie c={t.categorie} />
+                    {!t.passe && !['ANNULE', 'SUPPRIME'].includes(t.statut) && (t.visibleApp
+                      ? <div className="nd-cell-sub" style={{ color: 'var(--nd-green)' }}>✓ visible par les clients</div>
+                      : <div className="nd-cell-sub" style={{ color: 'var(--nd-red)', fontWeight: 600 }}>✕ caché : {t.raisonCache}</div>)}</td>
                   <td><div className="nd-cell-name">{t.nomChauffeur || '—'}</div>
                     <div className="nd-cell-sub">{t.entreprise ? `🏢 ${t.entreprise}` : joli(t.telephone) || `ID ${t.chauffeurId || '—'}`}{t.chauffeurId ? ` · ID ${t.chauffeurId}` : ''}</div></td>
                   <td><small>{t.lieuDepart || '—'} → {t.lieuDestination || '—'}</small></td>
@@ -182,6 +220,7 @@ export function Reservations() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [onglet, setOnglet] = useState('A_VENIR');
+  const [categorie, setCategorie] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -194,10 +233,10 @@ export function Reservations() {
   const annulee = r => r.statut === 'ANNULEE';
   const dans = (r, k) => k === 'TOUTES' ? true : k === 'ANNULEES' ? annulee(r) : k === 'A_VENIR' ? !annulee(r) && !r.passe : !annulee(r) && r.passe;
   const q = search.trim().toLowerCase();
-  const filtered = all.filter(r => dans(r, onglet) && contient(q, r.id, r.codeBillet, r.nomClient, r.telephoneClient, r.clientId, r.lieuDepart, r.lieuDestination, r.nomChauffeur, r.entreprise));
+  const filtered = all.filter(r => dans(r, onglet) && (!categorie || r.categorie === categorie) && contient(q, r.id, r.codeBillet, r.nomClient, r.telephoneClient, r.clientId, r.lieuDepart, r.lieuDestination, r.nomChauffeur, r.entreprise));
   const { visibles, barre } = usePagination(filtered);
-  const nb = k => all.filter(r => dans(r, k)).length;
-  const actives = all.filter(r => !annulee(r));
+  const nb = k => all.filter(r => dans(r, k) && (!categorie || r.categorie === categorie)).length;
+  const actives = all.filter(r => !annulee(r) && (!categorie || r.categorie === categorie));
   const encaisse = actives.filter(r => r.paiementStatut === 'PAYE').reduce((s, r) => s + (r.montantPaye || 0), 0);
 
   const del = async id => {
@@ -226,15 +265,17 @@ export function Reservations() {
       </div>
       <Onglets valeur={onglet} onChange={setOnglet} options={[
         ['A_VENIR', `À venir (${nb('A_VENIR')})`], ['PASSEES', `Historique (${nb('PASSEES')})`],
-        ['ANNULEES', `Annulées (${nb('ANNULEES')})`], ['TOUTES', `Toutes (${all.length})`]]} />
+        ['ANNULEES', `Annulées (${nb('ANNULEES')})`], ['TOUTES', `Toutes (${nb('TOUTES')})`]]} />
+      <FiltreCategorie valeur={categorie} onChange={setCategorie} lignes={all.filter(r => dans(r, onglet))} />
       <div className="nd-card"><div className="nd-card-body-p0"><div className="nd-table-wrap">
         <table className="nd-table">
-          <thead><tr><th>#</th><th>Billet</th><th>Client</th><th>Trajet</th><th>Départ</th><th>Chauffeur</th><th>Places</th><th>Montant</th><th>Paiement</th><th>Statut</th><th></th></tr></thead>
+          <thead><tr><th>#</th><th>Rubrique</th><th>Billet</th><th>Client</th><th>Trajet</th><th>Départ</th><th>Chauffeur</th><th>Places</th><th>Montant</th><th>Paiement</th><th>Statut</th><th></th></tr></thead>
           <tbody>
-            {loading ? <LoadingRow cols={11} /> : !filtered.length ? <EmptyRow cols={11} msg="Aucune réservation" /> :
+            {loading ? <LoadingRow cols={12} /> : !filtered.length ? <EmptyRow cols={12} msg="Aucune réservation" /> :
               visibles.map(r => (
                 <tr key={r.id}>
                   <td className="nd-table-id">#{r.id}</td>
+                  <td><BadgeCategorie c={r.categorie} /></td>
                   <td>{r.codeBillet ? <code style={{ fontSize: 12 }}>{r.codeBillet}</code> : '—'}{r.embarque && <div><span className="nd-badge badge-success">embarqué</span></div>}</td>
                   <td><div className="nd-cell-name">{r.nomClient || '—'}</div><div className="nd-cell-sub">{joli(r.telephoneClient)} · ID {r.clientId || '—'}</div></td>
                   <td><small>{r.lieuDepart || '—'} → {r.lieuDestination || '—'}</small><div className="nd-cell-sub">T#{r.trajetId}</div></td>
