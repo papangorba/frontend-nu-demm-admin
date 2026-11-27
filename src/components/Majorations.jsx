@@ -25,7 +25,7 @@ export default function Majorations() {
     try {
       const [c, r] = await Promise.all([apiControle.config(), apiRegions.liste()]);
       setCfg(c);
-      setRegions(Array.isArray(r) ? r : []);
+      setRegions(Array.isArray(r) ? r : Array.isArray(r?.regions) ? r.regions : []);
       setForm(Object.fromEntries(CLES.map(k => [k, c[k] ?? ''])));
     } catch (e) { toast(e.message, 'error'); }
   };

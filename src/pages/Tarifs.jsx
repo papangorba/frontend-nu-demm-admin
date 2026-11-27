@@ -6,6 +6,7 @@ import { useToast } from '../context/AppContext';
 
 const ICONES = {
   COURSE_VOITURE: '🚗',
+  COURSE_MOTO: '🛵',
   LIVRAISON_MOTO: '🏍',
   LIVRAISON_TROIS_ROUES: '🛺',
   LIVRAISON_FOURGONNETTE: '🚐',
@@ -24,22 +25,31 @@ const lireNiveaux = s => Object.fromEntries((s || '').split(',').filter(Boolean)
 const ecrireNiveaux = m => Object.entries(m).filter(([, v]) => Number(v) !== 100).map(([k, v]) => `${k}:${Number(v)}`).join(',');
 
 /**
- * Prix par région : la grille ci-dessus vaut 100 % ; chaque région a son niveau (ex. Dakar 100 %, Thiès 85 %).
- * Le niveau de la région de DÉPART s'applique (prise en charge, prix au km et minimum).
+ * Prix par région. Deux façons de régler une région :
+ *  - un niveau en % de la grille nationale (ex. Thiès 85 %) ;
+ *  - une grille propre, service par service (prise en charge, prix au km, minimum), qui remplace le % pour ce service.
+ * C'est la région de DÉPART qui compte.
  */
 function PrixParRegion({ tarifs, km }) {
   const toast = useToast();
   const [regions, setRegions] = useState([]);
   const [enregistre, setEnregistre] = useState({});
   const [niveaux, setNiveaux] = useState({});
+  const [grilles, setGrilles] = useState({});   // { REGION: { CODE: {prixBase, prixKm, prixMinimum} } } (enregistrées)
+  const [ouverte, setOuverte] = useState(null); // région en cours de personnalisation
+  const [saisie, setSaisie] = useState({});     // { CODE: {prixBase, prixKm, prixMinimum} } pour la région ouverte
   const [saving, setSaving] = useState(false);
 
   const charger = async () => {
     try {
-      const [r, cfg] = await Promise.all([apiRegions.liste(), apiControle.config()]);
-      setRegions(Array.isArray(r) ? r : []);
+      const [r, cfg, g] = await Promise.all([apiRegions.liste(), apiControle.config(), apiControle.tarifsRegions().catch(() => [])]);
+      // /api/admin/regions renvoie { regions, services } (avant : lu comme une liste → tableau toujours vide)
+      setRegions(Array.isArray(r) ? r : Array.isArray(r?.regions) ? r.regions : []);
       const n = lireNiveaux(cfg?.TARIF_REGIONS);
       setEnregistre(n); setNiveaux(n);
+      const m = {};
+      (g || []).forEach(x => { (m[x.region] = m[x.region] || {})[x.code] = x; });
+      setGrilles(m);
     } catch (e) { toast(e.message, 'error'); }
   };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -47,8 +57,12 @@ function PrixParRegion({ tarifs, km }) {
 
   const niveau = code => niveaux[code] ?? 100;
   const modifie = ecrireNiveaux(niveaux) !== ecrireNiveaux(enregistre);
-  const voiture = tarifs.find(t => t.code === 'COURSE_VOITURE');
-  const moto = tarifs.find(t => t.code === 'LIVRAISON_MOTO');
+  /** Prix d'un service dans une région : sa grille propre, sinon la grille nationale × le niveau */
+  const prixRegion = (region, t) => {
+    const g = grilles[region]?.[t.code];
+    return g ? calculer(g, km, 100) : calculer(t, km, Number(niveau(region)) || 100);
+  };
+  const exemples = tarifs.filter(t => ['COURSE_VOITURE', 'COURSE_MOTO', 'LIVRAISON_MOTO'].includes(t.code));
 
   const enregistrer = async () => {
     const valeur = ecrireNiveaux(niveaux);
@@ -57,8 +71,45 @@ function PrixParRegion({ tarifs, km }) {
     try {
       await apiControle.modifierConfig({ TARIF_REGIONS: valeur });
       Audit.log('MODIF_TARIFS_REGIONS', valeur || 'toutes les régions à 100 %');
-      toast('Prix par région enregistrés', 'success');
+      toast('Niveaux des régions enregistrés', 'success');
       await charger();
+    } catch (e) { toast(e.message, 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const ouvrir = r => {
+    if (ouverte === r.code) { setOuverte(null); return; }
+    const init = {};
+    tarifs.forEach(t => {
+      const g = grilles[r.code]?.[t.code];
+      init[t.code] = g ? { prixBase: g.prixBase, prixKm: g.prixKm, prixMinimum: g.prixMinimum, propre: true } : { prixBase: '', prixKm: '', prixMinimum: '', propre: false };
+    });
+    setSaisie(init); setOuverte(r.code);
+  };
+  const champ = (code, k, v) => setSaisie(s => ({ ...s, [code]: { ...s[code], [k]: v } }));
+
+  const enregistrerGrille = async (r, t) => {
+    const g = saisie[t.code];
+    if ([g.prixBase, g.prixKm, g.prixMinimum].some(x => x === '' || x == null)) { toast('Remplissez les 3 montants (ou laissez la grille nationale)', 'error'); return; }
+    setSaving(true);
+    try {
+      await apiControle.modifierTarifRegion(r.code, t.code, { prixBase: g.prixBase, prixKm: g.prixKm, prixMinimum: g.prixMinimum });
+      Audit.log('MODIF_TARIF_REGION', `${r.nom} · ${t.libelle} : ${g.prixBase} F + ${g.prixKm} F/km, min. ${g.prixMinimum} F`);
+      toast(`${t.libelle} : grille propre à ${r.nom} enregistrée`, 'success');
+      await charger();
+      setSaisie(s => ({ ...s, [t.code]: { ...s[t.code], propre: true } }));
+    } catch (e) { toast(e.message, 'error'); }
+    finally { setSaving(false); }
+  };
+  const retirerGrille = async (r, t) => {
+    if (!window.confirm(`${r.nom} · ${t.libelle} : revenir à la grille nationale × ${niveau(r.code)} % ?`)) return;
+    setSaving(true);
+    try {
+      await apiControle.supprimerTarifRegion(r.code, t.code);
+      Audit.log('MODIF_TARIF_REGION', `${r.nom} · ${t.libelle} : retour à la grille nationale`);
+      toast('Grille nationale rétablie pour ce service', 'success');
+      await charger();
+      setSaisie(s => ({ ...s, [t.code]: { prixBase: '', prixKm: '', prixMinimum: '', propre: false } }));
     } catch (e) { toast(e.message, 'error'); }
     finally { setSaving(false); }
   };
@@ -70,33 +121,75 @@ function PrixParRegion({ tarifs, km }) {
         <div style={{ display: 'flex', gap: 8 }}>
           {modifie && <button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => setNiveaux(enregistre)}>Annuler</button>}
           <button className="nd-btn nd-btn-primary nd-btn-sm" disabled={saving || !modifie} onClick={enregistrer}>
-            {saving ? 'Enregistrement...' : '💾 Enregistrer'}
+            {saving ? 'Enregistrement...' : '💾 Enregistrer les niveaux'}
           </button>
         </div>
       </div>
       <div className="nd-card-body">
         <p className="nd-cell-sub" style={{ marginTop: 0 }}>
-          La grille ci-dessus = <b>100 %</b>. Mettez par exemple Dakar à 100 % et Thiès à 85 % : une course qui part de Thiès
-          coûte 15 % de moins. C'est la région de <b>départ</b> qui compte. Entre 50 et 200 %.
+          Chaque région suit la grille nationale × son <b>niveau</b> (ex. Thiès 85 % = 15 % moins cher), ou une <b>grille propre</b>
+          service par service (bouton « Personnaliser »). C'est la région de <b>départ</b> qui compte. Exemples pour {km} km.
           Les prix du covoiturage (Taxi-Bokko, Allô Sénégal) restent fixés par les chauffeurs.
         </p>
         <div className="nd-table-wrap">
           <table className="nd-table">
-            <thead><tr><th>Région</th><th>Niveau</th><th>Course voiture {km} km</th><th>Livraison moto {km} km</th></tr></thead>
+            <thead><tr><th>Région</th><th>Niveau</th><th>Réglage</th>{exemples.map(t => <th key={t.code}>{ICONES[t.code]} {t.libelle}</th>)}<th></th></tr></thead>
             <tbody>
-              {regions.map(r => (
-                <tr key={r.code} style={niveau(r.code) !== (enregistre[r.code] ?? 100) ? { background: 'rgba(245,158,11,.07)' } : undefined}>
-                  <td><b>{r.nom}</b></td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input className="nd-input" type="number" min="50" max="200" step="5" style={{ maxWidth: 90 }}
-                        value={niveau(r.code)} onChange={e => setNiveaux(n => ({ ...n, [r.code]: e.target.value }))} /> %
-                    </div>
-                  </td>
-                  <td>{voiture ? money(calculer(voiture, km, Number(niveau(r.code)) || 100)) : '—'}</td>
-                  <td>{moto ? money(calculer(moto, km, Number(niveau(r.code)) || 100)) : '—'}</td>
-                </tr>
-              ))}
+              {regions.map(r => {
+                const propres = Object.keys(grilles[r.code] || {});
+                return [
+                  <tr key={r.code} style={niveau(r.code) !== (enregistre[r.code] ?? 100) ? { background: 'rgba(245,158,11,.07)' } : undefined}>
+                    <td><b>{r.nom}</b></td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input className="nd-input" type="number" min="50" max="200" step="5" style={{ width: 100, minWidth: 100, padding: '8px 10px' }}
+                          value={niveau(r.code)} onChange={e => setNiveaux(n => ({ ...n, [r.code]: e.target.value }))} /> %
+                      </div>
+                    </td>
+                    <td>{propres.length
+                      ? <span className="nd-badge badge-info">Grille propre : {propres.length} service(s)</span>
+                      : <small className="nd-cell-sub" style={{ whiteSpace: 'nowrap' }}>Grille nationale × {niveau(r.code)} %</small>}</td>
+                    {exemples.map(t => (
+                      <td key={t.code}>{money(prixRegion(r.code, t))}{grilles[r.code]?.[t.code] && <div className="nd-cell-sub">grille propre</div>}</td>
+                    ))}
+                    <td><button className="nd-btn nd-btn-outline nd-btn-sm" onClick={() => ouvrir(r)}>{ouverte === r.code ? 'Fermer' : '✏ Personnaliser'}</button></td>
+                  </tr>,
+                  ouverte === r.code && (
+                    <tr key={`${r.code}-grille`}>
+                      <td colSpan={4 + exemples.length} style={{ background: 'var(--nd-surface2)' }}>
+                        <b>Grille de {r.nom}</b> <small className="nd-cell-sub">— vide = grille nationale × {niveau(r.code)} % (montants grisés)</small>
+                        <div className="nd-table-wrap" style={{ marginTop: 8 }}>
+                          <table className="nd-table">
+                            <thead><tr><th>Service</th><th>Prise en charge (F)</th><th>Prix au km (F)</th><th>Minimum (F)</th><th>Exemple {km} km</th><th></th></tr></thead>
+                            <tbody>
+                              {tarifs.map(t => {
+                                const g = saisie[t.code] || {};
+                                const c = (Number(niveau(r.code)) || 100) / 100;
+                                const indicatif = { prixBase: Math.round((t.prixBase || 0) * c), prixKm: Math.round((t.prixKm || 0) * c), prixMinimum: Math.round((t.prixMinimum || 0) * c) };
+                                const rempli = ['prixBase', 'prixKm', 'prixMinimum'].every(k => g[k] !== '' && g[k] != null);
+                                return (
+                                  <tr key={t.code}>
+                                    <td><span style={{ fontSize: 18 }}>{ICONES[t.code] || '💰'}</span> {t.libelle}{g.propre && <div><span className="nd-badge badge-info">grille propre</span></div>}</td>
+                                    {['prixBase', 'prixKm', 'prixMinimum'].map(k => (
+                                      <td key={k}><input className="nd-input" type="number" min="0" step="50" style={{ maxWidth: 110 }}
+                                        placeholder={String(indicatif[k])} value={g[k] ?? ''} onChange={e => champ(t.code, k, e.target.value)} /></td>
+                                    ))}
+                                    <td><b>{money(rempli ? calculer(g, km, 100) : calculer(t, km, Number(niveau(r.code)) || 100))}</b></td>
+                                    <td style={{ whiteSpace: 'nowrap' }}>
+                                      <button className="nd-btn nd-btn-primary nd-btn-sm" disabled={saving || !rempli} onClick={() => enregistrerGrille(r, t)}>💾</button>{' '}
+                                      {g.propre && <button className="nd-btn nd-btn-ghost nd-btn-sm" disabled={saving} onClick={() => retirerGrille(r, t)} title="Revenir à la grille nationale">↺ National</button>}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  ),
+                ];
+              })}
             </tbody>
           </table>
         </div>

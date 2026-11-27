@@ -1081,3 +1081,9 @@ h1,h2,h3,.nd-page-title,.nd-card-title,.nd-brand-name,.nd-welcome-title,.nd-logi
   display:flex; align-items:center; justify-content:center; border:3px solid #fff; box-shadow:0 0 0 0 rgba(220,38,38,.7);
   animation:svSos 1.4s infinite; }
 @keyframes svSos { 0% { box-shadow:0 0 0 0 rgba(220,38,38,.7); } 70% { box-shadow:0 0 0 16px rgba(220,38,38,0); } 100% { box-shadow:0 0 0 0 rgba(220,38,38,0); } }
+
+/* Page Paramètres : une ligne par réglage (libellé + explication à gauche, valeur à droite) */
+.pm-ligne { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:12px 18px; border-bottom:1px solid var(--nd-border); flex-wrap:wrap; }
+.pm-ligne:last-child { border-bottom:none; }
+.pm-libelle { flex:1; min-width:220px; }
+.pm-cle { font-size:10.5px; color:var(--nd-text-dim); font-family:monospace; }

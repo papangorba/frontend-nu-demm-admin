@@ -52,7 +52,8 @@ const Vehicules = lazy(() => historique().then(m => ({ default: m.Vehicules })))
 const Reservations = lazy(() => historique().then(m => ({ default: m.Reservations })));
 const Admins = lazy(() => autres().then(m => ({ default: m.Admins })));
 const AuditLog = lazy(() => autres().then(m => ({ default: m.AuditLog })));
-const Settings = lazy(() => autres().then(m => ({ default: m.Settings })));
+// Paramètres réels du serveur (avant : page de démonstration aux valeurs écrites en dur)
+const Settings = lazy(() => import('./pages/Parametres'));
 
 function PrivateRoute({ children }) {
   const { logged } = useAuth();

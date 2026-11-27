@@ -295,6 +295,10 @@ export const apiEnvoisColis = {
 export const apiControle = {
   tarifs:          ()         => get('/api/admin/tarifs'),
   modifierTarif:   (code, d)  => put(`/api/admin/tarifs/${code}`, d),
+  /** Grilles propres à une région (sinon : grille nationale × niveau de la région) */
+  tarifsRegions:   ()         => get('/api/admin/tarifs/regions'),
+  modifierTarifRegion:  (region, code, d) => put(`/api/admin/tarifs/regions/${region}/${code}`, d),
+  supprimerTarifRegion: (region, code)    => del(`/api/admin/tarifs/regions/${region}/${code}`),
   config:          ()         => get('/api/admin/config'),
   modifierConfig:  d          => put('/api/admin/config', d),
   verifierStores:  ()         => post('/api/admin/versions/verifier'),
