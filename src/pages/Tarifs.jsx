@@ -13,6 +13,28 @@ const ICONES = {
   LIVRAISON_CAMION: '🚚',
 };
 
+/**
+ * Grille conseillée (novembre 2026), d'après les prix pratiqués à Dakar :
+ *  - VTC (Yango) : ~600 F le minimum, ~110 F/km + ~30 F/min → ~1 400 F pour 5 km ; taxi jaune 1 500 - 2 000 F en ville.
+ *    Pas de prix à la minute chez Ñu Demm : le prix au km l'inclut (embouteillages).
+ *  - Livraison moto à Dakar : 1 000 - 1 500 F dans le centre, 2 000 - 3 000 F vers la banlieue.
+ *  - Tricycle (3 roues) : 5 000 - 15 000 F la course de marchandises dans Dakar ; utilitaire Yango Cargo : ~3 500 F + ~240 F/km.
+ * Seulement pré-remplie : rien n'est enregistré sans « Enregistrer ».
+ */
+const GRILLE_CONSEILLEE = {
+  COURSE_VOITURE:         { prixBase: 500,  prixKm: 200, prixMinimum: 1000 },  // 5 km ≈ 1 500 F · 10 km ≈ 2 500 F
+  COURSE_MOTO:            { prixBase: 200,  prixKm: 100, prixMinimum: 300 },   // 3 km ≈ 500 F · 5 km ≈ 700 F
+  LIVRAISON_MOTO:         { prixBase: 500,  prixKm: 150, prixMinimum: 1000 },  // 5 km ≈ 1 250 F · 10 km ≈ 2 000 F
+  LIVRAISON_TROIS_ROUES:  { prixBase: 2000, prixKm: 300, prixMinimum: 3000 },  // 10 km ≈ 5 000 F
+  LIVRAISON_FOURGONNETTE: { prixBase: 3000, prixKm: 400, prixMinimum: 5000 },  // 10 km ≈ 7 000 F
+  LIVRAISON_CAMION:       { prixBase: 8000, prixKm: 700, prixMinimum: 12000 }, // 10 km ≈ 15 000 F
+};
+/** Niveaux conseillés : Dakar le plus cher ; Thiès et Saint-Louis un peu moins ; les autres régions 80 - 85 % */
+const NIVEAUX_CONSEILLES = {
+  DAKAR: 100, THIES: 90, SAINT_LOUIS: 90, DIOURBEL: 85, KAOLACK: 85, ZIGUINCHOR: 85, TAMBACOUNDA: 85, KEDOUGOU: 85,
+  LOUGA: 80, FATICK: 80, KAFFRINE: 80, KOLDA: 80, SEDHIOU: 80, MATAM: 80,
+};
+
 /** Même calcul que le serveur : max(minimum, base + km × distance) × niveau de la région, arrondi à 50 F. */
 const calculer = (t, km, pourcent = 100) => {
   const c = pourcent / 100;
@@ -119,6 +141,8 @@ function PrixParRegion({ tarifs, km }) {
       <div className="nd-card-header" style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <span className="nd-card-title">Prix par région</span>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button className="nd-btn nd-btn-outline nd-btn-sm" onClick={() => setNiveaux({ ...NIVEAUX_CONSEILLES })}
+            title="Pré-remplit les niveaux (Dakar 100 %, Thiès 90 %…) : vérifiez puis enregistrez">⭐ Niveaux conseillés</button>
           {modifie && <button className="nd-btn nd-btn-ghost nd-btn-sm" onClick={() => setNiveaux(enregistre)}>Annuler</button>}
           <button className="nd-btn nd-btn-primary nd-btn-sm" disabled={saving || !modifie} onClick={enregistrer}>
             {saving ? 'Enregistrement...' : '💾 Enregistrer les niveaux'}
@@ -219,6 +243,16 @@ export default function Tarifs() {
   const set = (code, champ, v) => setBrouillon(b => ({ ...b, [code]: { ...b[code], [champ]: v } }));
   const modifies = useMemo(() => Object.keys(brouillon), [brouillon]);
   const courant = t => ({ ...t, ...brouillon[t.code] });
+  /** Pré-remplit la grille conseillée (seulement les services qui changent) ; rien n'est enregistré ici */
+  const appliquerConseil = () => {
+    const b = {};
+    tarifs.forEach(t => {
+      const c = GRILLE_CONSEILLEE[t.code];
+      if (c && ['prixBase', 'prixKm', 'prixMinimum'].some(k => Number(t[k]) !== c[k])) b[t.code] = { ...c };
+    });
+    setBrouillon(b);
+    toast(Object.keys(b).length ? `${Object.keys(b).length} service(s) pré-remplis (en jaune) : vérifiez, ajustez puis « Enregistrer »` : 'La grille est déjà la grille conseillée', 'info');
+  };
 
   const enregistrer = async () => {
     setSaving(true);
@@ -240,7 +274,9 @@ export default function Tarifs() {
           <h1>Tarifs</h1>
           <p>Le prix de chaque course ou livraison est calculé par le serveur avec cette grille — le client voit ce prix avant de commander</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button className="nd-btn nd-btn-outline" onClick={appliquerConseil}
+            title="Pré-remplit des prix raisonnables (marché de Dakar, nov. 2026) : vérifiez, ajustez, puis enregistrez">⭐ Grille conseillée</button>
           {modifies.length > 0 && <button className="nd-btn nd-btn-ghost" onClick={() => setBrouillon({})}>Annuler</button>}
           <button className="nd-btn nd-btn-primary" disabled={saving || !modifies.length} onClick={enregistrer}>
             {saving ? 'Enregistrement...' : `💾 Enregistrer${modifies.length ? ` (${modifies.length})` : ''}`}
@@ -267,8 +303,8 @@ export default function Tarifs() {
             <span>⚠</span>
             <div>
               <b>{pareils.map(t => t.libelle).join(', ')}</b> : pas plus cher que la livraison à moto.
-              Le Cargo (3 roues, fourgonnette, camion) devrait coûter plus. Exemple de grille :
-              3 roues 1 000 F + 300 F/km (min. 1 500 F) · fourgonnette 2 500 F + 500 F/km (min. 3 000 F) · camion 5 000 F + 800 F/km (min. 7 500 F).
+              Le Cargo (3 roues, fourgonnette, camion) devrait coûter plus : le bouton <b>⭐ Grille conseillée</b> propose
+              3 roues 2 000 F + 300 F/km (min. 3 000 F) · fourgonnette 3 000 F + 400 F/km (min. 5 000 F) · camion 8 000 F + 700 F/km (min. 12 000 F).
             </div>
           </div>
         );
